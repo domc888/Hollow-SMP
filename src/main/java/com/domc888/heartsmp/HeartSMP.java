@@ -18,6 +18,7 @@ public final class HeartSMP extends JavaPlugin {
         TokenItems tokens = new TokenItems(this);
 
         getServer().getPluginManager().registerEvents(new LifeListener(this, lives, tokens), this);
+        getServer().getPluginManager().registerEvents(new ShrineListener(this, lives), this);
 
         HeartCommand heartCommand = new HeartCommand(lives, tokens);
         PluginCommand heart = Objects.requireNonNull(getCommand("heartsmp"));
