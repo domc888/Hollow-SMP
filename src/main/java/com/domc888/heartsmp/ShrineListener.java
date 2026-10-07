@@ -1,6 +1,7 @@
 package com.domc888.heartsmp;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -10,14 +11,16 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class ShrineListener implements Listener {
@@ -61,9 +64,6 @@ public final class ShrineListener implements Listener {
 
         shrines.remove(block);
 
-        /*
-         * Drop the custom shrine item again.
-         */
         event.setDropItems(false);
 
         block.getWorld().dropItemNaturally(
@@ -92,10 +92,9 @@ public final class ShrineListener implements Listener {
             return;
         }
 
-        ItemStack item =
-                event.getPlayer()
-                        .getInventory()
-                        .getItemInMainHand();
+        ItemStack item = event.getPlayer()
+                .getInventory()
+                .getItemInMainHand();
 
         if (item.getType() != Material.PLAYER_HEAD) {
             return;
@@ -110,14 +109,14 @@ public final class ShrineListener implements Listener {
         if (playerName == null || playerName.isBlank()) {
             event.getPlayer().sendMessage(
                     Component.text(
-                            "That player head could not be identified."
+                            "That player head could not be identified.",
+                            NamedTextColor.RED
                     )
             );
             return;
         }
 
-        Player target =
-                Bukkit.getPlayerExact(playerName);
+        Player target = Bukkit.getPlayerExact(playerName);
 
         if (target != null
                 && !lives.isEliminated(
@@ -125,8 +124,8 @@ public final class ShrineListener implements Listener {
         )) {
             event.getPlayer().sendMessage(
                     Component.text(
-                            target.getName()
-                                    + " is not death banned."
+                            target.getName() + " is not death banned.",
+                            NamedTextColor.RED
                     )
             );
             return;
@@ -135,13 +134,13 @@ public final class ShrineListener implements Listener {
         org.bukkit.OfflinePlayer offline =
                 Bukkit.getOfflinePlayer(playerName);
 
-        if (!lives.isEliminated(
-                offline.getUniqueId()
-        )) {
+        UUID uuid = offline.getUniqueId();
+
+        if (!lives.isEliminated(uuid)) {
             event.getPlayer().sendMessage(
                     Component.text(
-                            playerName
-                                    + " is not death banned."
+                            playerName + " is not death banned.",
+                            NamedTextColor.RED
                     )
             );
             return;
@@ -150,7 +149,7 @@ public final class ShrineListener implements Listener {
         event.setCancelled(true);
 
         /*
-         * Consume the player head.
+         * Consume exactly one player head.
          */
         item.setAmount(item.getAmount() - 1);
 
@@ -160,18 +159,18 @@ public final class ShrineListener implements Listener {
 
         revive(
                 playerName,
-                offline.getUniqueId(),
+                uuid,
                 clicked.getLocation()
         );
     }
 
     private void revive(
             String playerName,
-            java.util.UUID uuid,
+            UUID uuid,
             Location shrine
     ) {
         /*
-         * Set exactly 1 life and remove elimination.
+         * Revived players receive exactly 1 life.
          */
         lives.revive(uuid, 1);
 
@@ -182,42 +181,59 @@ public final class ShrineListener implements Listener {
                 .pardon(playerName);
 
         /*
-         * Lightning at random positions within radius 4.
+         * A LOT of lightning around the shrine.
+         *
+         * strikeLightningEffect() is used so this is
+         * visual lightning without normal lightning damage/fire.
          */
-        for (int i = 0; i < 6; i++) {
+        ThreadLocalRandom random =
+                ThreadLocalRandom.current();
+
+        for (int i = 0; i < 32; i++) {
+            double angle =
+                    random.nextDouble(0.0, Math.PI * 2.0);
+
+            double radius =
+                    random.nextDouble(1.0, 4.5);
+
             double x =
-                    ThreadLocalRandom.current()
-                            .nextDouble(-4.0, 4.0);
+                    Math.cos(angle) * radius;
 
             double z =
-                    ThreadLocalRandom.current()
-                            .nextDouble(-4.0, 4.0);
+                    Math.sin(angle) * radius;
 
-            Location strike =
-                    shrine.clone().add(
-                            x,
-                            1,
-                            z
-                    );
+            Location strike = shrine.clone().add(
+                    x,
+                    0,
+                    z
+            );
 
-            strike.setY(
+            int highestY =
                     shrine.getWorld()
                             .getHighestBlockYAt(
-                                    strike
-                            ) + 1
-            );
+                                    strike.getBlockX(),
+                                    strike.getBlockZ()
+                            );
+
+            strike.setY(highestY + 1);
 
             shrine.getWorld()
                     .strikeLightningEffect(strike);
         }
 
         /*
-         * Exact requested revival message.
+         * Broadcast the revival with the revived
+         * player's name clearly coloured.
          */
         Bukkit.broadcast(
                 Component.text(
-                        playerName
-                                + " has been revived"
+                        playerName,
+                        NamedTextColor.GREEN
+                ).append(
+                        Component.text(
+                                " has been revived!",
+                                NamedTextColor.GOLD
+                        )
                 )
         );
     }
