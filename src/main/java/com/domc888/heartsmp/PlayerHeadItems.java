@@ -1,41 +1,30 @@
 package com.domc888.heartsmp;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.entity.Player;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.profile.PlayerProfile;
+
+import java.util.UUID;
 
 public final class PlayerHeadItems {
 
     private PlayerHeadItems() {
     }
 
-    public static ItemStack create(Player player) {
-        ItemStack head = new ItemStack(
-                org.bukkit.Material.PLAYER_HEAD
-        );
-
+    public static ItemStack create(UUID playerId, String playerName) {
+        ItemStack head = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) head.getItemMeta();
 
-        /*
-         * Copy the player's actual profile.
-         * This makes the dropped head use their skin.
-         */
-        PlayerProfile profile = player.getPlayerProfile();
+        if (meta == null) {
+            return head;
+        }
+
+        PlayerProfile profile = Bukkit.createPlayerProfile(playerId, playerName);
         meta.setPlayerProfile(profile);
 
-        /*
-         * The head is named after the player.
-         */
-        meta.displayName(
-                Component.text(player.getName())
-                        .decoration(TextDecoration.ITALIC, false)
-        );
-
         head.setItemMeta(meta);
-
         return head;
     }
 }
