@@ -40,31 +40,25 @@ public final class LifeListener implements Listener {
             return;
         }
 
+        /*
+         * Drop the player's actual head.
+         */
+        ItemStack head = PlayerHeadItems.create(player);
+
+        event.getDrops().add(head);
+
+        /*
+         * Remove one life.
+         */
         int remaining = lives.loseLife(id);
 
         if (remaining <= 0) {
-            /*
-             * The player has reached 0 lives.
-             * Ban them instead of putting them into spectator.
-             */
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (player.isOnline()) {
-                    lives.deathBan(player);
-                }
-            });
-
-            return;
+            player.sendMessage(
+                    Component.text(
+                            "You have lost your final life."
+                    )
+            );
         }
-
-        player.sendMessage(
-                Component.text(
-                        "Lives left: "
-                                + remaining
-                                + "/"
-                                + lives.getMaxLives()
-                                + "."
-                )
-        );
     }
 
     @EventHandler
@@ -73,14 +67,16 @@ public final class LifeListener implements Listener {
         UUID id = player.getUniqueId();
 
         if (lives.isEliminated(id)) {
-            /*
-             * They are already death-banned. Do not set spectator.
-             */
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (player.isOnline()) {
-                    lives.deathBan(player);
-                }
-            });
+            player.sendMessage(
+                    Component.text(
+                            "You are out of lives and have been death banned."
+                    )
+            );
+
+            Bukkit.getScheduler().runTask(
+                    plugin,
+                    () -> lives.applyState(player)
+            );
 
             return;
         }
@@ -100,21 +96,22 @@ public final class LifeListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            if (player.isOnline()) {
-                lives.applyState(player);
-            }
-        });
+        Bukkit.getScheduler().runTask(
+                plugin,
+                () -> {
+                    if (player.isOnline()) {
+                        lives.applyState(player);
+                    }
+                }
+        );
     }
 
     @EventHandler
     public void onUse(PlayerInteractEvent event) {
         Action action = event.getAction();
 
-        if (
-                action != Action.RIGHT_CLICK_AIR
-                        && action != Action.RIGHT_CLICK_BLOCK
-        ) {
+        if (action != Action.RIGHT_CLICK_AIR
+                && action != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
 
@@ -127,9 +124,7 @@ public final class LifeListener implements Listener {
         ItemStack hand =
                 player.getInventory().getItemInMainHand();
 
-        RevivalToken token = tokens.read(hand);
-
-        if (token == null) {
+        if (tokens.read(hand) == null) {
             return;
         }
 
@@ -159,7 +154,7 @@ public final class LifeListener implements Listener {
 
         player.sendMessage(
                 Component.text(
-                        "Revival Token used. Lives: "
+                        "Revival token used. Lives: "
                                 + lives.getLives(id)
                                 + "/"
                                 + lives.getMaxLives()
