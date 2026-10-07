@@ -1,4 +1,6 @@
 max-lives: 3
 starting-lives: 3
-revive-lives: 1
-revive-message: "{player} has been revived!"
+
+death-ban:
+  enabled: true
+  reason: "You have lost all of your lives."
