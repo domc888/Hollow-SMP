@@ -13,15 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 public final class HeartCommand implements TabExecutor {
-
-    private record Parsed(String name, int amount) {
-    }
-
-    private static final List<String> GIVE_AMOUNTS =
-            List.of("1", "8", "16", "32", "64");
 
     private final LivesManager lives;
     private final TokenItems tokens;
@@ -54,91 +47,85 @@ public final class HeartCommand implements TabExecutor {
 
     private void setLives(CommandSender sender, String[] args) {
         if (args.length != 3) {
-            sendUsage(sender);
-            return;
-        }
-
-        Parsed parsed = parse(args[1], args[2]);
-
-        if (parsed == null) {
-            sendUsage(sender);
-            return;
-        }
-
-        int max = lives.getMaxLives();
-
-        if (parsed.amount() < 0 || parsed.amount() > max) {
             sender.sendMessage(
-                    Component.text(
-                            "Amount must be between 0 and " + max + "."
-                    )
+                    Component.text("/heartsmp setlives <player> <amount>")
             );
             return;
         }
 
-        OfflinePlayer target = findPlayer(parsed.name());
+        Player target = Bukkit.getPlayerExact(args[1]);
 
         if (target == null) {
             sender.sendMessage(Component.text("Player not found."));
             return;
         }
 
-        lives.setLives(target.getUniqueId(), parsed.amount());
+        int amount;
 
-        Player online = target.getPlayer();
-
-        if (online != null) {
-            if (parsed.amount() == 0) {
-                lives.deathBan(online);
-            } else {
-                lives.applyState(online);
-
-                online.sendMessage(
-                        Component.text(
-                                "Your lives were set to "
-                                        + parsed.amount()
-                                        + "/"
-                                        + max
-                                        + "."
-                        )
-                );
-            }
+        try {
+            amount = Integer.parseInt(args[2]);
+        } catch (NumberFormatException e) {
+            sender.sendMessage(Component.text("Invalid amount."));
+            return;
         }
+
+        if (amount < 0 || amount > lives.getMaxLives()) {
+            sender.sendMessage(
+                    Component.text(
+                            "Amount must be between 0 and "
+                                    + lives.getMaxLives()
+                                    + "."
+                    )
+            );
+            return;
+        }
+
+        lives.setLives(target.getUniqueId(), amount);
 
         sender.sendMessage(
                 Component.text(
                         "Set "
-                                + parsed.name()
+                                + target.getName()
                                 + " to "
-                                + parsed.amount()
+                                + amount
                                 + "/"
-                                + max
+                                + lives.getMaxLives()
                                 + " lives."
                 )
         );
     }
 
     private void give(CommandSender sender, String[] args) {
-        if (args.length < 3 || args.length > 4) {
-            sendUsage(sender);
+        /*
+         * ONLY:
+         *
+         * /heartsmp give <amount> <player>
+         */
+
+        if (args.length != 3) {
+            sender.sendMessage(
+                    Component.text("/heartsmp give <amount> <player>")
+            );
             return;
         }
 
-        Parsed parsed = parse(args[1], args[2]);
+        int amount;
 
-        if (parsed == null) {
-            sendUsage(sender);
+        try {
+            amount = Integer.parseInt(args[1]);
+        } catch (NumberFormatException e) {
+            sender.sendMessage(Component.text("Invalid amount."));
             return;
         }
 
-        if (parsed.amount() < 1 || parsed.amount() > 64) {
+        if (amount < 1 || amount > 64) {
             sender.sendMessage(
                     Component.text("Amount must be between 1 and 64.")
             );
             return;
         }
 
-        Player target = Bukkit.getPlayerExact(parsed.name());
+        Player target = Bukkit.getPlayerExact(args[2]);
 
         if (target == null) {
             sender.sendMessage(
@@ -147,104 +134,42 @@ public final class HeartCommand implements TabExecutor {
             return;
         }
 
-        RevivalToken fixed = null;
+        /*
+         * The command now gives the standard Revival token.
+         * It does not accept a token type.
+         */
+        ItemStack stack = tokens.create(RevivalToken.NETHER_STAR);
+        stack.setAmount(amount);
 
-        if (args.length == 4) {
-            fixed = RevivalToken.byId(args[3]);
+        Map<Integer, ItemStack> leftovers =
+                target.getInventory().addItem(stack);
 
-            if (fixed == null) {
-                sender.sendMessage(
-                        Component.text(
-                                "Unknown token. Use tab completion to see all 25."
-                        )
-                );
-                return;
-            }
-        }
-
-        if (fixed != null) {
-            ItemStack stack = tokens.create(fixed);
-            stack.setAmount(parsed.amount());
-            giveItem(target, stack);
-        } else {
-            RevivalToken[] all = RevivalToken.values();
-
-            for (int i = 0; i < parsed.amount(); i++) {
-                RevivalToken random =
-                        all[ThreadLocalRandom.current().nextInt(all.length)];
-
-                giveItem(target, tokens.create(random));
-            }
+        for (ItemStack leftover : leftovers.values()) {
+            target.getWorld().dropItemNaturally(
+                    target.getLocation(),
+                    leftover
+            );
         }
 
         sender.sendMessage(
                 Component.text(
                         "Gave "
-                                + parsed.amount()
-                                + " Revival Token(s) to "
+                                + amount
+                                + " Revival token(s) to "
                                 + target.getName()
                                 + "."
                 )
         );
     }
 
-    private void giveItem(Player target, ItemStack stack) {
-        Map<Integer, ItemStack> leftovers =
-                target.getInventory().addItem(stack);
-
-        for (ItemStack left : leftovers.values()) {
-            target.getWorld().dropItemNaturally(
-                    target.getLocation(),
-                    left
-            );
-        }
-    }
-
     private void sendUsage(CommandSender sender) {
         sender.sendMessage(
-                Component.text(
-                        "/heartsmp setlives <player> <amount>"
-                )
+                Component.text("/heartsmp setlives <player> <amount>")
         );
 
         sender.sendMessage(
-                Component.text(
-                        "/heartsmp give <amount> <player> [token]"
-                )
+                Component.text("/heartsmp give <amount> <player>")
         );
-    }
-
-    private Parsed parse(String first, String second) {
-        Integer a = toInt(first);
-        Integer b = toInt(second);
-
-        if (a != null && b == null) {
-            return new Parsed(second, a);
-        }
-
-        if (a == null && b != null) {
-            return new Parsed(first, b);
-        }
-
-        return null;
-    }
-
-    private Integer toInt(String text) {
-        try {
-            return Integer.parseInt(text);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private OfflinePlayer findPlayer(String name) {
-        Player online = Bukkit.getPlayerExact(name);
-
-        if (online != null) {
-            return online;
-        }
-
-        return Bukkit.getOfflinePlayerIfCached(name);
     }
 
     @Override
@@ -261,60 +186,52 @@ public final class HeartCommand implements TabExecutor {
             );
         }
 
-        String sub = args[0].toLowerCase(Locale.ROOT);
-
-        boolean isSet = sub.equals("setlives");
-        boolean isGive = sub.equals("give");
-
-        if (!isSet && !isGive) {
-            return List.of();
-        }
-
         if (args.length == 2) {
-            return isSet
-                    ? filter(onlineNames(), args[1])
-                    : filter(GIVE_AMOUNTS, args[1]);
+            if (args[0].equalsIgnoreCase("give")) {
+                return filter(
+                        List.of("1", "8", "16", "32", "64"),
+                        args[1]
+                );
+            }
+
+            if (args[0].equalsIgnoreCase("setlives")) {
+                return filter(
+                        onlineNames(),
+                        args[1]
+                );
+            }
         }
 
         if (args.length == 3) {
-            if (toInt(args[1]) != null) {
-                return filter(onlineNames(), args[2]);
+            if (args[0].equalsIgnoreCase("give")) {
+                return filter(
+                        onlineNames(),
+                        args[2]
+                );
             }
 
-            return filter(
-                    isSet ? lifeAmounts() : GIVE_AMOUNTS,
-                    args[2]
-            );
-        }
+            if (args[0].equalsIgnoreCase("setlives")) {
+                List<String> amounts = new ArrayList<>();
 
-        if (args.length == 4 && isGive) {
-            return filter(
-                    RevivalToken.ids(),
-                    args[3]
-            );
+                for (int i = 0; i <= lives.getMaxLives(); i++) {
+                    amounts.add(String.valueOf(i));
+                }
+
+                return filter(amounts, args[2]);
+            }
         }
 
         return List.of();
     }
 
-    private List<String> lifeAmounts() {
-        List<String> out = new ArrayList<>();
-
-        for (int i = 0; i <= lives.getMaxLives(); i++) {
-            out.add(String.valueOf(i));
-        }
-
-        return out;
-    }
-
     private List<String> onlineNames() {
-        List<String> out = new ArrayList<>();
+        List<String> names = new ArrayList<>();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            out.add(player.getName());
+            names.add(player.getName());
         }
 
-        return out;
+        return names;
     }
 
     private List<String> filter(
@@ -322,14 +239,14 @@ public final class HeartCommand implements TabExecutor {
             String prefix
     ) {
         String lower = prefix.toLowerCase(Locale.ROOT);
-        List<String> out = new ArrayList<>();
+        List<String> result = new ArrayList<>();
 
         for (String option : options) {
             if (option.toLowerCase(Locale.ROOT).startsWith(lower)) {
-                out.add(option);
+                result.add(option);
             }
         }
 
-        return out;
+        return result;
     }
 }
