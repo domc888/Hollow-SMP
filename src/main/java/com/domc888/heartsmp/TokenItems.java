@@ -1,6 +1,7 @@
 package com.domc888.heartsmp;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
@@ -16,13 +17,34 @@ public final class TokenItems {
     }
 
     public ItemStack create(RevivalToken token) {
-        ItemStack item = new ItemStack(token.material());
+        ItemStack item = new ItemStack(Material.NETHER_STAR);
         ItemMeta meta = item.getItemMeta();
 
-        meta.displayName(Component.text(token.displayName()).decoration(TextDecoration.ITALIC, false));
-        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, token.id());
+        meta.displayName(
+                Component.text("Revival Token")
+                        .color(NamedTextColor.GOLD)
+                        .decoration(TextDecoration.ITALIC, false)
+        );
+
+        /*
+         * Hidden identifier used by the plugin to determine which
+         * Revival Token type this is.
+         */
+        meta.getPersistentDataContainer().set(
+                key,
+                PersistentDataType.STRING,
+                token.id()
+        );
+
+        /*
+         * Each token gets a different model value so a resource pack
+         * can give each token its own texture while the actual Minecraft
+         * item remains a Netherite Star.
+         */
+        meta.setCustomModelData(token.customModelData());
 
         item.setItemMeta(meta);
+
         return item;
     }
 
@@ -30,7 +52,14 @@ public final class TokenItems {
         if (item == null || item.getType().isAir() || !item.hasItemMeta()) {
             return null;
         }
-        String id = item.getItemMeta().getPersistentDataContainer().get(key, PersistentDataType.STRING);
+
+        ItemMeta meta = item.getItemMeta();
+
+        String id = meta.getPersistentDataContainer().get(
+                key,
+                PersistentDataType.STRING
+        );
+
         return RevivalToken.byId(id);
     }
 }
