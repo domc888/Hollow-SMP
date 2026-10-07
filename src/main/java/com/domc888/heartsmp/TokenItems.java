@@ -18,26 +18,22 @@ public final class TokenItems {
     }
 
     public ItemStack create(RevivalToken token) {
-        // EVERY revival token is a Nether Star.
         ItemStack item = new ItemStack(Material.NETHER_STAR);
 
         ItemMeta meta = item.getItemMeta();
 
-        // Every token has the exact same visible name.
         meta.displayName(
                 Component.text("Revival token")
                         .color(NamedTextColor.GOLD)
                         .decoration(TextDecoration.ITALIC, false)
         );
 
-        // Stores which type of revival token it is.
         meta.getPersistentDataContainer().set(
                 key,
                 PersistentDataType.STRING,
                 token.id()
         );
 
-        // Lets the resource pack give each token its own texture.
         meta.setCustomModelData(token.customModelData());
 
         item.setItemMeta(meta);
