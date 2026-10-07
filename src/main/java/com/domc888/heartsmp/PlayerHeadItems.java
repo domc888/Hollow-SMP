@@ -4,7 +4,6 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.profile.PlayerProfile;
 
 public final class PlayerHeadItems {
 
@@ -19,8 +18,7 @@ public final class PlayerHeadItems {
             return head;
         }
 
-        PlayerProfile profile = player.getPlayerProfile();
-        meta.setPlayerProfile(profile);
+        meta.setOwningPlayer(player);
 
         head.setItemMeta(meta);
         return head;
