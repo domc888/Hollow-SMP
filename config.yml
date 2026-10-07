@@ -1,6 +1,0 @@
-max-lives: 3
-starting-lives: 3
-
-death-ban:
-  enabled: true
-  reason: "You have lost all of your lives."
