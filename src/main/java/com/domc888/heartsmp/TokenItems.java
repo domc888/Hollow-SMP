@@ -3,6 +3,7 @@ package com.domc888.heartsmp;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -17,30 +18,26 @@ public final class TokenItems {
     }
 
     public ItemStack create(RevivalToken token) {
+        // EVERY revival token is a Nether Star.
         ItemStack item = new ItemStack(Material.NETHER_STAR);
+
         ItemMeta meta = item.getItemMeta();
 
+        // Every token has the exact same visible name.
         meta.displayName(
-                Component.text("Revival Token")
+                Component.text("Revival token")
                         .color(NamedTextColor.GOLD)
                         .decoration(TextDecoration.ITALIC, false)
         );
 
-        /*
-         * Hidden identifier used by the plugin to determine which
-         * Revival Token type this is.
-         */
+        // Stores which type of revival token it is.
         meta.getPersistentDataContainer().set(
                 key,
                 PersistentDataType.STRING,
                 token.id()
         );
 
-        /*
-         * Each token gets a different model value so a resource pack
-         * can give each token its own texture while the actual Minecraft
-         * item remains a Netherite Star.
-         */
+        // Lets the resource pack give each token its own texture.
         meta.setCustomModelData(token.customModelData());
 
         item.setItemMeta(meta);
@@ -49,16 +46,21 @@ public final class TokenItems {
     }
 
     public RevivalToken read(ItemStack item) {
-        if (item == null || item.getType().isAir() || !item.hasItemMeta()) {
+        if (item == null || item.getType().isAir()) {
             return null;
         }
 
-        ItemMeta meta = item.getItemMeta();
+        if (item.getType() != Material.NETHER_STAR) {
+            return null;
+        }
 
-        String id = meta.getPersistentDataContainer().get(
-                key,
-                PersistentDataType.STRING
-        );
+        if (!item.hasItemMeta()) {
+            return null;
+        }
+
+        String id = item.getItemMeta()
+                .getPersistentDataContainer()
+                .get(key, PersistentDataType.STRING);
 
         return RevivalToken.byId(id);
     }
