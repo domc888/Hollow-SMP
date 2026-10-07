@@ -1,0 +1,24 @@
+name: HeartSMP
+version: 1.0.0
+main: com.domc888.heartsmp.HeartSMP
+api-version: 1.21.11
+author: domc888
+commands:
+  heartsmp:
+    description: HeartSMP admin command
+    usage: /<command> <setlives|give> ...
+    permission: heartsmp.admin
+  lives:
+    description: Show how many lives you or another player have
+    usage: /<command> [player]
+    permission: heartsmp.lives
+permissions:
+  heartsmp.admin:
+    description: Allows /heartsmp
+    default: op
+  heartsmp.lives:
+    description: Allows /lives
+    default: true
+  heartsmp.lives.others:
+    description: Allows /lives <player>
+    default: op
