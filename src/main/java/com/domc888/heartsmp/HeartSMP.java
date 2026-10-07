@@ -53,12 +53,12 @@ public final class HeartSMP extends JavaPlugin {
                 tokens
         );
 
-        PluginCommand heart = Objects.requireNonNull(
-                getCommand("heartsmp")
+        PluginCommand hollow = Objects.requireNonNull(
+                getCommand("hollowsmp")
         );
 
-        heart.setExecutor(heartCommand);
-        heart.setTabCompleter(heartCommand);
+        hollow.setExecutor(heartCommand);
+        hollow.setTabCompleter(heartCommand);
 
         LivesCommand livesCommand = new LivesCommand(lives);
 
@@ -69,9 +69,6 @@ public final class HeartSMP extends JavaPlugin {
         livesCommandPlugin.setExecutor(livesCommand);
         livesCommandPlugin.setTabCompleter(livesCommand);
 
-        /*
-         * Revival Shrine
-         */
         NamespacedKey shrineKey = new NamespacedKey(
                 this,
                 "revival_shrine"
@@ -110,8 +107,6 @@ public final class HeartSMP extends JavaPlugin {
         );
 
         /*
-         * Revival Shrine recipe:
-         *
          * D G D
          * G T G
          * D R D
@@ -143,13 +138,6 @@ public final class HeartSMP extends JavaPlugin {
                 Material.TOTEM_OF_UNDYING
         );
 
-        /*
-         * The token can be any of the 25 valid
-         * HeartSMP revival tokens.
-         *
-         * Every token is physically a Nether Star
-         * and is identified by the HeartSMP PDC.
-         */
         List<ItemStack> tokenChoices = new ArrayList<>();
 
         for (RevivalToken token : RevivalToken.values()) {
