@@ -1,14 +1,12 @@
 package com.domc888.heartsmp;
 
-import net.kyori.adventure.text.Component;
+import org.bukkit.BanList;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -25,10 +23,6 @@ public final class LivesManager {
         this.maxLives = maxLives;
         this.startingLives = startingLives;
 
-        if (!plugin.getDataFolder().exists()) {
-            plugin.getDataFolder().mkdirs();
-        }
-
         this.file = new File(plugin.getDataFolder(), "lives.yml");
         this.data = YamlConfiguration.loadConfiguration(file);
     }
@@ -40,7 +34,10 @@ public final class LivesManager {
     public int getLives(UUID id) {
         return Math.min(
                 maxLives,
-                Math.max(0, data.getInt(id + ".lives", startingLives))
+                Math.max(
+                        0,
+                        data.getInt(id + ".lives", startingLives)
+                )
         );
     }
 
@@ -48,100 +45,89 @@ public final class LivesManager {
         return data.getBoolean(id + ".eliminated", false);
     }
 
-    private boolean needsRestore(UUID id) {
-        return data.getBoolean(id + ".restore", false);
-    }
-
     public void setLives(UUID id, int lives) {
         int clamped = Math.min(maxLives, Math.max(0, lives));
-        boolean wasEliminated = isEliminated(id);
 
         data.set(id + ".lives", clamped);
 
-        if (clamped == 0) {
+        if (clamped <= 0) {
             data.set(id + ".eliminated", true);
             data.set(id + ".restore", false);
-        } else if (wasEliminated) {
+        } else {
             data.set(id + ".eliminated", false);
-            data.set(id + ".restore", true);
+            data.set(id + ".restore", false);
         }
 
         save();
+
+        if (clamped <= 0) {
+            Player player = Bukkit.getPlayer(id);
+
+            if (player != null) {
+                deathBan(player);
+            }
+        }
     }
 
     public int loseLife(UUID id) {
-        int current = getLives(id);
-
-        if (current <= 0) {
-            return 0;
-        }
-
-        setLives(id, current - 1);
-        return getLives(id);
+        int newLives = Math.max(0, getLives(id) - 1);
+        setLives(id, newLives);
+        return newLives;
     }
 
-    private void clearRestore(UUID id) {
-        data.set(id + ".restore", false);
+    public void revive(UUID id, int lives) {
+        int restoredLives = Math.min(maxLives, Math.max(1, lives));
+
+        data.set(id + ".lives", restoredLives);
+        data.set(id + ".eliminated", false);
+        data.set(id + ".restore", true);
+
         save();
+
+        OfflinePlayerData.unban(plugin, id);
     }
 
     public void applyState(Player player) {
         UUID id = player.getUniqueId();
 
-        /*
-         * Players with 0 lives are permanently death-banned.
-         * They should never be put into spectator mode.
-         */
         if (isEliminated(id)) {
-            if (!player.isBanned()) {
-                deathBan(player);
-            }
+            deathBan(player);
             return;
         }
 
-        if (needsRestore(id)) {
-            clearRestore(id);
-
-            Location spawn = player.getRespawnLocation();
-
-            if (spawn == null) {
-                if (Bukkit.getWorlds().isEmpty()) {
-                    return;
-                }
-
-                spawn = Bukkit.getWorlds().get(0).getSpawnLocation();
-            }
+        if (data.getBoolean(id + ".restore", false)) {
+            data.set(id + ".restore", false);
+            save();
 
             player.setGameMode(org.bukkit.GameMode.SURVIVAL);
-            player.teleport(spawn);
+            player.setHealth(Math.min(
+                    player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue(),
+                    20.0
+            ));
         }
     }
 
-    public void deathBan(Player player) {
-        if (!plugin.getConfig().getBoolean("death-ban.enabled", true)) {
-            return;
-        }
-
-        String reason = plugin.getConfig().getString(
-                "death-ban.reason",
-                "You have lost all of your lives."
-        );
-
-        player.ban(
-                reason,
-                (Duration) null,
+    private void deathBan(Player player) {
+        Bukkit.getBanList(BanList.Type.NAME).addBan(
+                player.getName(),
+                "You are out of lives.",
+                null,
                 "HeartSMP"
         );
 
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (player.isOnline()) {
-                player.kick(Component.text(reason));
+                player.kickPlayer("You are out of lives.");
             }
         });
     }
 
     private void save() {
         try {
+            if (!plugin.getDataFolder().exists()) {
+                plugin.getDataFolder().mkdirs();
+            }
+
             data.save(file);
         } catch (IOException e) {
             plugin.getLogger().log(
@@ -149,6 +135,26 @@ public final class LivesManager {
                     "Could not save lives.yml",
                     e
             );
+        }
+    }
+
+    private static final class OfflinePlayerData {
+
+        private static void unban(HeartSMP plugin, UUID id) {
+            Player player = Bukkit.getPlayer(id);
+
+            if (player != null) {
+                Bukkit.getBanList(BanList.Type.NAME).pardon(player.getName());
+                return;
+            }
+
+            String name = plugin.getServer()
+                    .getOfflinePlayer(id)
+                    .getName();
+
+            if (name != null) {
+                Bukkit.getBanList(BanList.Type.NAME).pardon(name);
+            }
         }
     }
 }
