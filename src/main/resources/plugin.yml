@@ -5,7 +5,7 @@ api-version: '1.21.11'
 author: domc888
 
 commands:
-  heartsmp:
+  hollowsmp:
     description: HeartSMP admin command
     usage: /<command> <setlives|give> ...
     permission: heartsmp.admin
@@ -17,7 +17,7 @@ commands:
 
 permissions:
   heartsmp.admin:
-    description: Allows /heartsmp
+    description: Allows /hollowsmp
     default: op
 
   heartsmp.lives:
