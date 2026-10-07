@@ -1,19 +1,19 @@
 package com.domc888.heartsmp;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabExecutor;
-import org.bukkit.entity.Player;
+import org.bukkit.command.TabCompleter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
 
-public final class LivesCommand implements TabExecutor {
+public final class LivesCommand implements CommandExecutor, TabCompleter {
 
     private final LivesManager lives;
 
@@ -28,76 +28,143 @@ public final class LivesCommand implements TabExecutor {
             String label,
             String[] args
     ) {
+        if (!sender.hasPermission("heartsmp.lives")) {
+            sender.sendMessage(
+                    Component.text(
+                            "You do not have permission to use this command.",
+                            NamedTextColor.RED
+                    )
+            );
+            return true;
+        }
+
+        OfflinePlayer target;
+
         if (args.length == 0) {
-            if (!(sender instanceof Player player)) {
+            if (!(sender instanceof org.bukkit.entity.Player player)) {
                 sender.sendMessage(
                         Component.text(
-                                "Specify a player: /lives <player>"
+                                "Console must specify a player.",
+                                NamedTextColor.RED
                         )
                 );
                 return true;
             }
 
+            target = player;
+        } else if (args.length == 1) {
+            if (!sender.hasPermission(
+                    "heartsmp.lives.others"
+            )) {
+                sender.sendMessage(
+                        Component.text(
+                                "You do not have permission to view another player's lives.",
+                                NamedTextColor.RED
+                        )
+                );
+                return true;
+            }
+
+            target = findPlayer(args[0]);
+
+            if (target == null) {
+                sender.sendMessage(
+                        Component.text(
+                                "Player not found.",
+                                NamedTextColor.RED
+                        )
+                );
+                return true;
+            }
+        } else {
             sender.sendMessage(
                     Component.text(
-                            "You have "
-                                    + describe(player.getUniqueId())
-                                    + "."
-                    )
-            );
-
-            return true;
-        }
-
-        if (!sender.hasPermission("heartsmp.lives.others")) {
-            sender.sendMessage(
-                    Component.text(
-                            "You do not have permission to check other players."
+                            "Usage: /lives [player]",
+                            NamedTextColor.RED
                     )
             );
             return true;
         }
 
-        OfflinePlayer target = Bukkit.getPlayerExact(args[0]);
+        int currentLives =
+                lives.getLives(target.getUniqueId());
 
-        if (target == null) {
-            target = Bukkit.getOfflinePlayerIfCached(args[0]);
-        }
+        int maxLives =
+                lives.getMaxLives();
 
-        if (target == null) {
-            sender.sendMessage(Component.text("Player not found."));
-            return true;
-        }
+        boolean eliminated =
+                lives.isEliminated(
+                        target.getUniqueId()
+                );
 
         String name =
-                target.getName() != null
-                        ? target.getName()
-                        : args[0];
+                target.getName() == null
+                        ? "Unknown"
+                        : target.getName();
 
-        sender.sendMessage(
+        Component message =
                 Component.text(
-                        name
-                                + " has "
-                                + describe(target.getUniqueId())
-                                + "."
-                )
-        );
+                        "❤ ",
+                        NamedTextColor.RED
+                ).append(
+                        Component.text(
+                                name,
+                                NamedTextColor.GOLD,
+                                TextDecoration.BOLD
+                        )
+                ).append(
+                        Component.text(
+                                " has ",
+                                NamedTextColor.GRAY
+                        )
+                ).append(
+                        Component.text(
+                                currentLives,
+                                currentLives > 0
+                                        ? NamedTextColor.GREEN
+                                        : NamedTextColor.RED,
+                                TextDecoration.BOLD
+                        )
+                ).append(
+                        Component.text(
+                                "/" + maxLives + " lives",
+                                NamedTextColor.GRAY
+                        )
+                );
+
+        if (eliminated) {
+            message = message.append(
+                    Component.text(
+                            "  •  ELIMINATED",
+                            NamedTextColor.RED,
+                            TextDecoration.BOLD
+                    )
+            );
+        }
+
+        sender.sendMessage(message);
 
         return true;
     }
 
-    private String describe(UUID id) {
-        String text =
-                lives.getLives(id)
-                        + "/"
-                        + lives.getMaxLives()
-                        + " lives";
+    private OfflinePlayer findPlayer(String name) {
+        OfflinePlayer exact =
+                Bukkit.getOfflinePlayerIfCached(name);
 
-        if (lives.isEliminated(id)) {
-            text += " (death-banned)";
+        if (exact != null) {
+            return exact;
         }
 
-        return text;
+        for (OfflinePlayer player :
+                Bukkit.getOfflinePlayers()) {
+
+            if (player.getName() != null
+                    && player.getName().equalsIgnoreCase(name)) {
+                return player;
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -107,30 +174,28 @@ public final class LivesCommand implements TabExecutor {
             String alias,
             String[] args
     ) {
-        if (
-                args.length != 1
-                        || !sender.hasPermission(
-                        "heartsmp.lives.others"
-                )
-        ) {
+        if (args.length != 1
+                || !sender.hasPermission(
+                "heartsmp.lives.others"
+        )) {
             return List.of();
         }
 
-        String lower =
-                args[0].toLowerCase(Locale.ROOT);
+        String input = args[0].toLowerCase();
 
-        List<String> out = new ArrayList<>();
+        List<String> completions = new ArrayList<>();
 
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (
-                    player.getName()
-                            .toLowerCase(Locale.ROOT)
-                            .startsWith(lower)
-            ) {
-                out.add(player.getName());
+        for (org.bukkit.entity.Player player :
+                Bukkit.getOnlinePlayers()) {
+
+            if (player.getName()
+                    .toLowerCase()
+                    .startsWith(input)) {
+
+                completions.add(player.getName());
             }
         }
 
-        return out;
+        return completions;
     }
 }
