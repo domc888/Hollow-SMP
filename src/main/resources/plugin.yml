@@ -3,12 +3,13 @@ version: 1.0.0
 main: com.domc888.heartsmp.HeartSMP
 api-version: '1.21'
 author: domc888
-description: HeartSMP Core Plugin with Hollow Admin Interface.
+description: HeartSMP Core Plugin with Hollow Admin Interface and Revive System.
 
 commands:
-  heart:
-    description: HeartSMP management command
+  hollowsmp:
+    description: Main HollowSMP admin command
     permission: heartsmp.admin
+    aliases: [heart, hsmp]
   lives:
     description: Manage player lives
   voicechatmute:
