@@ -3,16 +3,12 @@ package com.domc888.heartsmp;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.MusicInstrumentMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.permissions.PermissionAttachment;
@@ -27,7 +23,7 @@ import java.util.logging.Level;
 public final class HollowAdminManager {
 
     private final HeartSMP plugin;
-    private final TokenItems tokens;
+
     private final NamespacedKey customItemKey;
 
     private final File file;
@@ -36,12 +32,8 @@ public final class HollowAdminManager {
     private final Map<UUID, PermissionAttachment> voiceAttachments =
             new HashMap<>();
 
-    public HollowAdminManager(
-            HeartSMP plugin,
-            TokenItems tokens
-    ) {
+    public HollowAdminManager(HeartSMP plugin) {
         this.plugin = plugin;
-        this.tokens = tokens;
 
         this.customItemKey = new NamespacedKey(
                 plugin,
@@ -53,7 +45,8 @@ public final class HollowAdminManager {
                 "hollowsmp.yml"
         );
 
-        this.data = YamlConfiguration.loadConfiguration(file);
+        this.data =
+                YamlConfiguration.loadConfiguration(file);
     }
 
     public boolean isImmortality(UUID uuid) {
@@ -98,93 +91,67 @@ public final class HollowAdminManager {
         );
     }
 
-    public void setImmortality(UUID uuid, boolean value) {
+    public boolean toggleImmortality(UUID uuid) {
+        boolean enabled = !isImmortality(uuid);
+
         setPlayerBoolean(
                 uuid,
                 "immortality",
-                value
-        );
-    }
-
-    public void setSaturation(UUID uuid, boolean value) {
-        setPlayerBoolean(
-                uuid,
-                "saturation",
-                value
+                enabled
         );
 
-        Player player = Bukkit.getPlayer(uuid);
-
-        if (player != null && value) {
-            player.setFoodLevel(20);
-        }
-    }
-
-    public void setInfiniteArmor(UUID uuid, boolean value) {
-        setPlayerBoolean(
-                uuid,
-                "infinite-armor",
-                value
-        );
-    }
-
-    public void setVoiceMuted(UUID uuid, boolean value) {
-        setPlayerBoolean(
-                uuid,
-                "voice-muted",
-                value
-        );
-
-        Player player = Bukkit.getPlayer(uuid);
-
-        if (player != null) {
-            applyVoicePermissions(player);
-        }
-    }
-
-    public boolean toggleImmortality(UUID uuid) {
-        boolean value = !isImmortality(uuid);
-
-        setImmortality(uuid, value);
-
-        return value;
+        return enabled;
     }
 
     public boolean toggleSaturation(UUID uuid) {
-        boolean value = !isSaturation(uuid);
+        boolean enabled = !isSaturation(uuid);
 
-        setSaturation(uuid, value);
+        setPlayerBoolean(
+                uuid,
+                "saturation",
+                enabled
+        );
 
-        return value;
+        Player player = Bukkit.getPlayer(uuid);
+
+        if (player != null && enabled) {
+            player.setFoodLevel(20);
+        }
+
+        return enabled;
     }
 
     public boolean toggleInfiniteArmor(UUID uuid) {
-        boolean value = !isInfiniteArmor(uuid);
+        boolean enabled = !isInfiniteArmor(uuid);
 
-        setInfiniteArmor(uuid, value);
+        setPlayerBoolean(
+                uuid,
+                "infinite-armor",
+                enabled
+        );
 
-        return value;
+        return enabled;
     }
 
     public boolean toggleProximityChat() {
-        boolean value = !isProximityChat();
+        boolean enabled = !isProximityChat();
 
         data.set(
                 "global.proximity-chat",
-                value
+                enabled
         );
 
         save();
 
-        return value;
+        return enabled;
     }
 
     public boolean toggleGlobalVoiceMute() {
-        boolean value = !isGlobalVoiceMute();
+        boolean enabled = !isGlobalVoiceMute();
 
         data.set(
                 "global.voice-mute",
-                value
+                enabled
         );
 
         save();
@@ -193,7 +160,25 @@ public final class HollowAdminManager {
             applyVoicePermissions(player);
         }
 
-        return value;
+        return enabled;
+    }
+
+    public boolean togglePersonalVoiceMute(UUID uuid) {
+        boolean enabled = !isVoiceMuted(uuid);
+
+        setPlayerBoolean(
+                uuid,
+                "voice-muted",
+                enabled
+        );
+
+        Player player = Bukkit.getPlayer(uuid);
+
+        if (player != null) {
+            applyVoicePermissions(player);
+        }
+
+        return enabled;
     }
 
     public void applyVoicePermissions(Player player) {
@@ -263,16 +248,18 @@ public final class HollowAdminManager {
 
     public ItemStack createRevivalHorn() {
         ItemStack item =
-                new ItemStack(Material.GOAT_HORN);
+                new ItemStack(
+                        org.bukkit.Material.GOAT_HORN
+                );
 
-        ItemMeta rawMeta =
+        ItemMeta meta =
                 item.getItemMeta();
 
-        if (rawMeta == null) {
+        if (meta == null) {
             return item;
         }
 
-        rawMeta.displayName(
+        meta.displayName(
                 Component.text(
                         "Revival",
                         NamedTextColor.DARK_PURPLE,
@@ -283,28 +270,21 @@ public final class HollowAdminManager {
                 )
         );
 
-        rawMeta.getPersistentDataContainer().set(
+        meta.getPersistentDataContainer().set(
                 customItemKey,
                 PersistentDataType.STRING,
                 "revival_horn"
         );
 
-        if (rawMeta instanceof MusicInstrumentMeta instrumentMeta) {
-            instrumentMeta.setInstrument(
-                    org.bukkit.MusicInstrument.PONDER_GOAT_HORN
-            );
-
-            rawMeta = instrumentMeta;
-        }
-
-        item.setItemMeta(rawMeta);
+        item.setItemMeta(meta);
 
         return item;
     }
 
     public boolean isRevivalHorn(ItemStack item) {
         if (item == null
-                || item.getType() != Material.GOAT_HORN
+                || item.getType()
+                != org.bukkit.Material.GOAT_HORN
                 || !item.hasItemMeta()) {
             return false;
         }
@@ -320,13 +300,41 @@ public final class HollowAdminManager {
         return "revival_horn".equals(value);
     }
 
+    public void playRevivalHorn(Player player) {
+        player.playSound(
+                player.getLocation(),
+                Sound.ENTITY_WARDEN_HEARTBEAT,
+                1.0f,
+                1.0f
+        );
+
+        double radius = 96.0;
+
+        for (Player nearby :
+                player.getWorld().getPlayers()) {
+
+            if (nearby.getLocation()
+                    .distanceSquared(
+                            player.getLocation()
+                    ) <= radius * radius) {
+
+                nearby.playSound(
+                        player.getLocation(),
+                        Sound.ENTITY_FIREWORK_ROCKET_BLAST,
+                        1.0f,
+                        1.0f
+                );
+            }
+        }
+    }
+
     public void sendToggleMessage(
             Player admin,
             String feature,
             boolean enabled,
             String targetName
     ) {
-        Component message =
+        admin.sendMessage(
                 Component.text(
                         feature + " for ",
                         NamedTextColor.GRAY
@@ -348,51 +356,28 @@ public final class HollowAdminManager {
                                         : NamedTextColor.RED,
                                 TextDecoration.BOLD
                         )
-                );
-
-        admin.sendMessage(message);
-    }
-
-    private void setPlayerBoolean(
-            UUID uuid,
-            String key,
-            boolean value
-    ) {
-        data.set(
-                playerPath(uuid, key),
-                value
+                )
         );
-
-        save();
-    }
-
-    private String playerPath(
-            UUID uuid,
-            String key
-    ) {
-        return "players." + uuid + "." + key;
-    }
-
-    private void save() {
-        try {
-            if (!plugin.getDataFolder().exists()) {
-                plugin.getDataFolder().mkdirs();
-            }
-
-            data.save(file);
-        } catch (IOException e) {
-            plugin.getLogger().log(
-                    Level.SEVERE,
-                    "Could not save hollowsmp.yml",
-                    e
-            );
-        }
     }
 
     public ItemStack createGuiItem(
-            Material material,
+            org.bukkit.Material material,
             String name,
             NamedTextColor color
+    ) {
+        return createGuiItem(
+                material,
+                name,
+                color,
+                null
+        );
+    }
+
+    public ItemStack createGuiItem(
+            org.bukkit.Material material,
+            String name,
+            NamedTextColor color,
+            String lore
     ) {
         ItemStack item =
                 new ItemStack(material);
@@ -414,74 +399,59 @@ public final class HollowAdminManager {
                 )
         );
 
-        item.setItemMeta(meta);
-
-        return item;
-    }
-
-    public ItemStack createGuiItem(
-            Material material,
-            String name,
-            NamedTextColor color,
-            String lore
-    ) {
-        ItemStack item =
-                createGuiItem(
-                        material,
-                        name,
-                        color
-                );
-
-        ItemMeta meta =
-                item.getItemMeta();
-
-        if (meta == null) {
-            return item;
+        if (lore != null) {
+            meta.lore(
+                    java.util.List.of(
+                            Component.text(
+                                    lore,
+                                    NamedTextColor.GRAY
+                            )
+                    )
+            );
         }
 
-        meta.lore(
-                java.util.List.of(
-                        Component.text(
-                                lore,
-                                NamedTextColor.GRAY
-                        )
-                )
-        );
-
         item.setItemMeta(meta);
 
         return item;
     }
 
-    public void playRevivalHorn(Player player) {
-        player.playSound(
-                player.getLocation(),
-                Sound.ENTITY_WARDEN_HEARTBEAT,
-                1.0f,
-                1.0f
+    private void setPlayerBoolean(
+            UUID uuid,
+            String key,
+            boolean value
+    ) {
+        data.set(
+                playerPath(uuid, key),
+                value
         );
 
-        for (Player nearby :
-                player.getWorld().getPlayers()) {
+        save();
+    }
 
-            if (!nearby.getWorld().equals(
-                    player.getWorld()
-            )) {
-                continue;
+    private String playerPath(
+            UUID uuid,
+            String key
+    ) {
+        return "players."
+                + uuid
+                + "."
+                + key;
+    }
+
+    private void save() {
+        try {
+            if (!plugin.getDataFolder().exists()) {
+                plugin.getDataFolder().mkdirs();
             }
 
-            if (nearby.getLocation()
-                    .distanceSquared(
-                            player.getLocation()
-                    ) <= 96.0 * 96.0) {
+            data.save(file);
 
-                nearby.playSound(
-                        player.getLocation(),
-                        Sound.ENTITY_FIREWORK_ROCKET_BLAST,
-                        1.0f,
-                        1.0f
-                );
-            }
+        } catch (IOException e) {
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Could not save hollowsmp.yml",
+                    e
+            );
         }
     }
 }
