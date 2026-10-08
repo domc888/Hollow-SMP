@@ -14,97 +14,176 @@ import java.util.Objects;
 
 public final class HeartSMP extends JavaPlugin {
 
+    private HollowAdminManager hollowAdminManager;
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
 
         int max = Math.max(
                 1,
-                getConfig().getInt("max-lives", 3)
+                getConfig().getInt(
+                        "max-lives",
+                        3
+                )
         );
 
         int start = Math.min(
                 max,
                 Math.max(
                         1,
-                        getConfig().getInt("starting-lives", max)
+                        getConfig().getInt(
+                                "starting-lives",
+                                max
+                        )
                 )
         );
 
-        LivesManager lives = new LivesManager(
-                this,
-                max,
-                start
-        );
-
-        TokenItems tokens = new TokenItems(this);
-
-        getServer().getPluginManager().registerEvents(
-                new LifeListener(
+        LivesManager lives =
+                new LivesManager(
                         this,
+                        max,
+                        start
+                );
+
+        TokenItems tokens =
+                new TokenItems(this);
+
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new LifeListener(
+                                this,
+                                lives,
+                                tokens
+                        ),
+                        this
+                );
+
+        HeartCommand heartCommand =
+                new HeartCommand(
                         lives,
                         tokens
-                ),
-                this
+                );
+
+        PluginCommand hollowCommand =
+                Objects.requireNonNull(
+                        getCommand("hollowsmp")
+                );
+
+        hollowCommand.setExecutor(
+                heartCommand
         );
 
-        HeartCommand heartCommand = new HeartCommand(
-                lives,
-                tokens
+        hollowCommand.setTabCompleter(
+                heartCommand
         );
 
-        PluginCommand hollow = Objects.requireNonNull(
-                getCommand("hollowsmp")
+        LivesCommand livesCommand =
+                new LivesCommand(lives);
+
+        PluginCommand livesPluginCommand =
+                Objects.requireNonNull(
+                        getCommand("lives")
+                );
+
+        livesPluginCommand.setExecutor(
+                livesCommand
         );
 
-        hollow.setExecutor(heartCommand);
-        hollow.setTabCompleter(heartCommand);
-
-        LivesCommand livesCommand = new LivesCommand(lives);
-
-        PluginCommand livesCommandPlugin = Objects.requireNonNull(
-                getCommand("lives")
+        livesPluginCommand.setTabCompleter(
+                livesCommand
         );
 
-        livesCommandPlugin.setExecutor(livesCommand);
-        livesCommandPlugin.setTabCompleter(livesCommand);
-
-        NamespacedKey shrineKey = new NamespacedKey(
-                this,
-                "revival_shrine"
-        );
-
-        ShrineManager shrineManager = new ShrineManager(this);
-
-        getServer().getPluginManager().registerEvents(
-                new ShrineListener(
+        NamespacedKey shrineKey =
+                new NamespacedKey(
                         this,
-                        lives,
-                        shrineManager,
-                        shrineKey
-                ),
-                this
-        );
+                        "revival_shrine"
+                );
+
+        ShrineManager shrineManager =
+                new ShrineManager(this);
+
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new ShrineListener(
+                                this,
+                                lives,
+                                shrineManager,
+                                shrineKey
+                        ),
+                        this
+                );
 
         registerShrineRecipe(
                 shrineKey,
                 tokens
         );
+
+        hollowAdminManager =
+                new HollowAdminManager(
+                        this,
+                        tokens
+                );
+
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new HollowAdminListener(
+                                this,
+                                hollowAdminManager,
+                                tokens,
+                                shrineKey
+                        ),
+                        this
+                );
+
+        VoiceChatMuteCommand voiceChatMute =
+                new VoiceChatMuteCommand(
+                        hollowAdminManager
+                );
+
+        PluginCommand voiceChatMuteCommand =
+                Objects.requireNonNull(
+                        getCommand(
+                                "voicechatmute"
+                        )
+                );
+
+        voiceChatMuteCommand.setExecutor(
+                voiceChatMute
+        );
+
+        voiceChatMuteCommand.setTabCompleter(
+                voiceChatMute
+        );
+    }
+
+    @Override
+    public void onDisable() {
+        if (hollowAdminManager != null) {
+            hollowAdminManager.shutdown();
+        }
     }
 
     private void registerShrineRecipe(
             NamespacedKey shrineKey,
             TokenItems tokens
     ) {
-        ItemStack result = ShrineItems.create(shrineKey);
+        ItemStack result =
+                ShrineItems.create(
+                        shrineKey
+                );
 
-        ShapedRecipe recipe = new ShapedRecipe(
-                new NamespacedKey(
-                        this,
-                        "revival_shrine"
-                ),
-                result
-        );
+        ShapedRecipe recipe =
+                new ShapedRecipe(
+                        new NamespacedKey(
+                                this,
+                                "revival_shrine"
+                        ),
+                        result
+                );
 
         /*
          * D G D
@@ -138,9 +217,12 @@ public final class HeartSMP extends JavaPlugin {
                 Material.TOTEM_OF_UNDYING
         );
 
-        List<ItemStack> tokenChoices = new ArrayList<>();
+        List<ItemStack> tokenChoices =
+                new ArrayList<>();
 
-        for (RevivalToken token : RevivalToken.values()) {
+        for (RevivalToken token :
+                RevivalToken.values()) {
+
             tokenChoices.add(
                     tokens.create(token)
             );
