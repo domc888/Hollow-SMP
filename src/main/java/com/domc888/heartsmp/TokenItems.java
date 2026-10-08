@@ -14,18 +14,30 @@ public final class TokenItems {
     private final NamespacedKey key;
 
     public TokenItems(HeartSMP plugin) {
-        this.key = new NamespacedKey(plugin, "revival_token");
+        this.key = new NamespacedKey(
+                plugin,
+                "revival_token"
+        );
     }
 
     public ItemStack create(RevivalToken token) {
-        ItemStack item = new ItemStack(Material.NETHER_STAR);
+        ItemStack item =
+                new ItemStack(Material.NETHER_STAR);
 
-        ItemMeta meta = item.getItemMeta();
+        ItemMeta meta =
+                item.getItemMeta();
+
+        if (meta == null) {
+            return item;
+        }
 
         meta.displayName(
                 Component.text("Revival token")
                         .color(NamedTextColor.GOLD)
-                        .decoration(TextDecoration.ITALIC, false)
+                        .decoration(
+                                TextDecoration.ITALIC,
+                                false
+                        )
         );
 
         meta.getPersistentDataContainer().set(
@@ -34,7 +46,9 @@ public final class TokenItems {
                 token.id()
         );
 
-        meta.setCustomModelData(token.customModelData());
+        meta.setCustomModelData(
+                token.customModelData()
+        );
 
         item.setItemMeta(meta);
 
@@ -54,9 +68,13 @@ public final class TokenItems {
             return null;
         }
 
-        String id = item.getItemMeta()
-                .getPersistentDataContainer()
-                .get(key, PersistentDataType.STRING);
+        String id =
+                item.getItemMeta()
+                        .getPersistentDataContainer()
+                        .get(
+                                key,
+                                PersistentDataType.STRING
+                        );
 
         return RevivalToken.byId(id);
     }
