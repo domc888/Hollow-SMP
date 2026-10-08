@@ -1,4 +1,4 @@
-package com.domc888/heartsmp;
+package com.domc888.heartsmp;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
