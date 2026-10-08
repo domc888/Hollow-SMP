@@ -1,448 +1,174 @@
-package com.domc888.heartsmp;
+package com.domc888/heartsmp;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.permissions.PermissionAttachment;
+import org.bukkit.inventory.meta.SkullMeta;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.logging.Level;
+import java.util.ArrayList;
+import java.util.List;
 
-public final class HollowAdminManager {
+public class HollowAdminManager {
 
     private final HeartSMP plugin;
-    private final NamespacedKey customItemKey;
-
-    private final File file;
-    private final YamlConfiguration data;
-
-    private final Map<UUID, PermissionAttachment> voiceAttachments =
-            new HashMap<>();
+    private boolean freezeBarrierActive = false;
 
     public HollowAdminManager(HeartSMP plugin) {
         this.plugin = plugin;
-
-        this.customItemKey = new NamespacedKey(
-                plugin,
-                "hollow_admin_item"
-        );
-
-        this.file = new File(
-                plugin.getDataFolder(),
-                "hollowsmp.yml"
-        );
-
-        this.data = YamlConfiguration.loadConfiguration(file);
     }
 
-    public boolean isImmortality(UUID uuid) {
-        return data.getBoolean(
-                playerPath(uuid, "immortality"),
-                false
-        );
+    public boolean isFreezeBarrierActive() {
+        return freezeBarrierActive;
     }
 
-    public boolean isSaturation(UUID uuid) {
-        return data.getBoolean(
-                playerPath(uuid, "saturation"),
-                false
-        );
+    public void setFreezeBarrierActive(boolean active) {
+        this.freezeBarrierActive = active;
     }
 
-    public boolean isInfiniteArmor(UUID uuid) {
-        return data.getBoolean(
-                playerPath(uuid, "infinite-armor"),
-                false
-        );
-    }
-
-    public boolean isVoiceMuted(UUID uuid) {
-        return data.getBoolean(
-                playerPath(uuid, "voice-muted"),
-                false
-        );
-    }
-
-    public boolean isProximityChat() {
-        return data.getBoolean(
-                "global.proximity-chat",
-                false
-        );
-    }
-
-    public boolean isGlobalVoiceMute() {
-        return data.getBoolean(
-                "global.voice-mute",
-                false
-        );
-    }
-
-    public boolean toggleImmortality(UUID uuid) {
-        boolean enabled = !isImmortality(uuid);
-
-        setPlayerBoolean(
-                uuid,
-                "immortality",
-                enabled
+    public void openMainGUI(Player admin) {
+        Inventory gui = Bukkit.createInventory(
+                new HollowGuiHolder(HollowGuiHolder.Type.MAIN), 
+                27, 
+                ChatColor.DARK_GRAY + "HollowSMP"
         );
 
-        return enabled;
-    }
-
-    public boolean toggleSaturation(UUID uuid) {
-        boolean enabled = !isSaturation(uuid);
-
-        setPlayerBoolean(
-                uuid,
-                "saturation",
-                enabled
-        );
-
-        Player player = Bukkit.getPlayer(uuid);
-
-        if (player != null && enabled) {
-            player.setFoodLevel(20);
+        // Slot 0: Custom Items GUI
+        ItemStack itemsIcon = new ItemStack(Material.CHEST);
+        ItemMeta itemsMeta = itemsIcon.getItemMeta();
+        if (itemsMeta != null) {
+            itemsMeta.setDisplayName(ChatColor.GOLD + "" + ChatColor.BOLD + "Custom Items");
+            itemsIcon.setItemMeta(itemsMeta);
         }
 
-        return enabled;
-    }
-
-    public boolean toggleInfiniteArmor(UUID uuid) {
-        boolean enabled = !isInfiniteArmor(uuid);
-
-        setPlayerBoolean(
-                uuid,
-                "infinite-armor",
-                enabled
-        );
-
-        return enabled;
-    }
-
-    public boolean toggleProximityChat() {
-        boolean enabled = !isProximityChat();
-
-        data.set(
-                "global.proximity-chat",
-                enabled
-        );
-
-        save();
-
-        return enabled;
-    }
-
-    public boolean toggleGlobalVoiceMute() {
-        boolean enabled = !isGlobalVoiceMute();
-
-        data.set(
-                "global.voice-mute",
-                enabled
-        );
-
-        save();
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            applyVoicePermissions(player);
+        // Slot 1: Player Management / Heads
+        ItemStack playersIcon = new ItemStack(Material.PLAYER_HEAD);
+        ItemMeta playersMeta = playersIcon.getItemMeta();
+        if (playersMeta != null) {
+            playersMeta.setDisplayName(ChatColor.YELLOW + "" + ChatColor.BOLD + "Manage Players");
+            playersIcon.setItemMeta(playersMeta);
         }
 
-        return enabled;
-    }
-
-    public boolean togglePersonalVoiceMute(UUID uuid) {
-        boolean enabled = !isVoiceMuted(uuid);
-
-        setPlayerBoolean(
-                uuid,
-                "voice-muted",
-                enabled
-        );
-
-        Player player = Bukkit.getPlayer(uuid);
-
-        if (player != null) {
-            applyVoicePermissions(player);
+        // Slot 2: Jukebox / Audio Controls
+        ItemStack musicIcon = new ItemStack(Material.JUKEBOX);
+        ItemMeta musicMeta = musicIcon.getItemMeta();
+        if (musicMeta != null) {
+            musicMeta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + "Server Audio");
+            musicIcon.setItemMeta(musicMeta);
         }
 
-        return enabled;
-    }
-
-    public void applyVoicePermissions(Player player) {
-        PermissionAttachment old =
-                voiceAttachments.remove(player.getUniqueId());
-
-        if (old != null) {
-            player.removeAttachment(old);
+        // Slot 3: Shrine Settings
+        ItemStack shrineIcon = new ItemStack(Material.RESPAWN_ANCHOR);
+        ItemMeta shrineMeta = shrineIcon.getItemMeta();
+        if (shrineMeta != null) {
+            shrineMeta.setDisplayName(ChatColor.AQUA + "" + ChatColor.BOLD + "Shrine Management");
+            shrineIcon.setItemMeta(shrineMeta);
         }
 
-        boolean globalMute =
-                isGlobalVoiceMute() && !player.isOp();
-
-        boolean personalMute =
-                isVoiceMuted(player.getUniqueId());
-
-        boolean muteSpeaking =
-                globalMute || personalMute;
-
-        boolean muteListening =
-                globalMute;
-
-        if (!muteSpeaking && !muteListening) {
-            return;
+        // Slot 4: Freeze Barrier Button
+        ItemStack freezeIcon = new ItemStack(freezeBarrierActive ? Material.ICE : Material.PACKED_ICE);
+        ItemMeta freezeMeta = freezeIcon.getItemMeta();
+        if (freezeMeta != null) {
+            freezeMeta.setDisplayName(ChatColor.AQUA + "" + ChatColor.BOLD + "Freeze Barrier");
+            List<String> lore = new ArrayList<>();
+            lore.add(ChatColor.GRAY + "Freezes all non-OP players.");
+            lore.add("");
+            lore.add(ChatColor.GRAY + "Status: " + (freezeBarrierActive ? ChatColor.GREEN + "ACTIVE" : ChatColor.RED + "DISABLED"));
+            lore.add(ChatColor.YELLOW + "Click to toggle!");
+            freezeMeta.setLore(lore);
+            freezeIcon.setItemMeta(freezeMeta);
         }
 
-        PermissionAttachment attachment =
-                player.addAttachment(plugin);
+        gui.setItem(0, itemsIcon);
+        gui.setItem(1, playersIcon);
+        gui.setItem(2, musicIcon);
+        gui.setItem(3, shrineIcon);
+        gui.setItem(4, freezeIcon);
 
-        attachment.setPermission(
-                "voicechat.speak",
-                !muteSpeaking
-        );
-
-        attachment.setPermission(
-                "voicechat.listen",
-                !muteListening
-        );
-
-        voiceAttachments.put(
-                player.getUniqueId(),
-                attachment
-        );
+        admin.openInventory(gui);
     }
 
-    public void shutdown() {
-        for (Map.Entry<UUID, PermissionAttachment> entry :
-                voiceAttachments.entrySet()) {
+    public void openItemsGUI(Player admin) {
+        Inventory gui = Bukkit.createInventory(
+                new HollowGuiHolder(HollowGuiHolder.Type.ITEMS), 
+                27, 
+                ChatColor.DARK_GRAY + "HollowSMP Items"
+        );
 
-            Player player =
-                    Bukkit.getPlayer(entry.getKey());
+        // Place custom items consecutively starting at Slot 0
+        gui.setItem(0, TokenItems.createRevivalToken());
+        gui.setItem(1, TokenItems.createHeartContainer());
+        gui.setItem(2, TokenItems.createShrineCore());
 
-            if (player != null) {
-                player.removeAttachment(
-                        entry.getValue()
-                );
-            }
+        // Slot 26: Return Arrow
+        ItemStack back = new ItemStack(Material.ARROW);
+        ItemMeta backMeta = back.getItemMeta();
+        if (backMeta != null) {
+            backMeta.setDisplayName(ChatColor.RED + "Back to Main Menu");
+            back.setItemMeta(backMeta);
+        }
+        gui.setItem(26, back);
+
+        admin.openInventory(gui);
+    }
+
+    public void openPlayerControlGUI(Player admin, Player target) {
+        Inventory gui = Bukkit.createInventory(
+                new HollowGuiHolder(HollowGuiHolder.Type.PLAYER_CONTROL, target.getUniqueId()), 
+                27, 
+                ChatColor.DARK_GRAY + "Control: " + target.getName()
+        );
+
+        // Slot 0: Revive / Totem
+        ItemStack revive = new ItemStack(Material.TOTEM_OF_UNDYING);
+        ItemMeta rMeta = revive.getItemMeta();
+        if (rMeta != null) {
+            rMeta.setDisplayName(ChatColor.GREEN + "Grant Life");
+            revive.setItemMeta(rMeta);
         }
 
-        voiceAttachments.clear();
-    }
-
-    public ItemStack createRevivalHorn() {
-        ItemStack item =
-                new ItemStack(Material.GOAT_HORN);
-
-        ItemMeta meta =
-                item.getItemMeta();
-
-        if (meta == null) {
-            return item;
+        // Slot 1: Take Heart
+        ItemStack takeHeart = new ItemStack(Material.GOLDEN_CARROT);
+        ItemMeta tMeta = takeHeart.getItemMeta();
+        if (tMeta != null) {
+            tMeta.setDisplayName(ChatColor.RED + "Revoke Life");
+            takeHeart.setItemMeta(tMeta);
         }
 
-        meta.displayName(
-                Component.text(
-                        "Revival",
-                        NamedTextColor.DARK_PURPLE,
-                        TextDecoration.BOLD
-                ).decoration(
-                        TextDecoration.ITALIC,
-                        false
-                )
-        );
-
-        meta.getPersistentDataContainer().set(
-                customItemKey,
-                PersistentDataType.STRING,
-                "revival_horn"
-        );
-
-        item.setItemMeta(meta);
-
-        return item;
-    }
-
-    public boolean isRevivalHorn(ItemStack item) {
-        if (item == null
-                || item.getType() != Material.GOAT_HORN
-                || !item.hasItemMeta()) {
-            return false;
+        // Slot 2: Invsee
+        ItemStack invsee = new ItemStack(Material.CHESTPLATE);
+        ItemMeta iMeta = invsee.getItemMeta();
+        if (iMeta != null) {
+            iMeta.setDisplayName(ChatColor.YELLOW + "Inspect Inventory");
+            invsee.setItemMeta(iMeta);
         }
 
-        String value =
-                item.getItemMeta()
-                        .getPersistentDataContainer()
-                        .get(
-                                customItemKey,
-                                PersistentDataType.STRING
-                        );
-
-        return "revival_horn".equals(value);
-    }
-
-    public void playRevivalHorn(Player player) {
-        player.playSound(
-                player.getLocation(),
-                Sound.ENTITY_WARDEN_HEARTBEAT,
-                1.0f,
-                1.0f
-        );
-
-        double radius = 96.0;
-
-        for (Player nearby :
-                player.getWorld().getPlayers()) {
-
-            if (nearby.getLocation()
-                    .distanceSquared(
-                            player.getLocation()
-                    ) <= radius * radius) {
-
-                nearby.playSound(
-                        player.getLocation(),
-                        Sound.ENTITY_FIREWORK_ROCKET_BLAST,
-                        1.0f,
-                        1.0f
-                );
-            }
-        }
-    }
-
-    public void sendToggleMessage(
-            Player admin,
-            String feature,
-            boolean enabled,
-            String targetName
-    ) {
-        admin.sendMessage(
-                Component.text(
-                        feature + " for ",
-                        NamedTextColor.GRAY
-                ).append(
-                        Component.text(
-                                targetName,
-                                NamedTextColor.GOLD
-                        )
-                ).append(
-                        Component.text(
-                                " is now ",
-                                NamedTextColor.GRAY
-                        )
-                ).append(
-                        Component.text(
-                                enabled ? "ON" : "OFF",
-                                enabled
-                                        ? NamedTextColor.GREEN
-                                        : NamedTextColor.RED,
-                                TextDecoration.BOLD
-                        )
-                )
-        );
-    }
-
-    public ItemStack createGuiItem(
-            Material material,
-            String name,
-            NamedTextColor color
-    ) {
-        return createGuiItem(
-                material,
-                name,
-                color,
-                null
-        );
-    }
-
-    public ItemStack createGuiItem(
-            Material material,
-            String name,
-            NamedTextColor color,
-            String lore
-    ) {
-        ItemStack item =
-                new ItemStack(material);
-
-        ItemMeta meta =
-                item.getItemMeta();
-
-        if (meta == null) {
-            return item;
+        // Slot 3: Enderchest
+        ItemStack ender = new ItemStack(Material.ENDER_CHEST);
+        ItemMeta eMeta = ender.getItemMeta();
+        if (eMeta != null) {
+            eMeta.setDisplayName(ChatColor.LIGHT_PURPLE + "Inspect Enderchest");
+            ender.setItemMeta(eMeta);
         }
 
-        meta.displayName(
-                Component.text(
-                        name,
-                        color
-                ).decoration(
-                        TextDecoration.ITALIC,
-                        false
-                )
-        );
-
-        if (lore != null) {
-            meta.lore(
-                    java.util.List.of(
-                            Component.text(
-                                    lore,
-                                    NamedTextColor.GRAY
-                            )
-                    )
-            );
+        // Slot 4: Player Head Info
+        ItemStack head = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta hMeta = (SkullMeta) head.getItemMeta();
+        if (hMeta != null) {
+            hMeta.setOwningPlayer(target);
+            hMeta.setDisplayName(ChatColor.AQUA + target.getName());
+            head.setItemMeta(hMeta);
         }
 
-        item.setItemMeta(meta);
+        gui.setItem(0, revive);
+        gui.setItem(1, takeHeart);
+        gui.setItem(2, invsee);
+        gui.setItem(3, ender);
+        gui.setItem(4, head);
 
-        return item;
-    }
-
-    private void setPlayerBoolean(
-            UUID uuid,
-            String key,
-            boolean value
-    ) {
-        data.set(
-                playerPath(uuid, key),
-                value
-        );
-
-        save();
-    }
-
-    private String playerPath(
-            UUID uuid,
-            String key
-    ) {
-        return "players."
-                + uuid
-                + "."
-                + key;
-    }
-
-    private void save() {
-        try {
-            if (!plugin.getDataFolder().exists()) {
-                plugin.getDataFolder().mkdirs();
-            }
-
-            data.save(file);
-
-        } catch (IOException e) {
-            plugin.getLogger().log(
-                    Level.SEVERE,
-                    "Could not save hollowsmp.yml",
-                    e
-            );
-        }
+        admin.openInventory(gui);
     }
 }
