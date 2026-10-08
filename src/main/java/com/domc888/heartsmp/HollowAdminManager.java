@@ -4,6 +4,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -23,7 +24,6 @@ import java.util.logging.Level;
 public final class HollowAdminManager {
 
     private final HeartSMP plugin;
-
     private final NamespacedKey customItemKey;
 
     private final File file;
@@ -45,8 +45,7 @@ public final class HollowAdminManager {
                 "hollowsmp.yml"
         );
 
-        this.data =
-                YamlConfiguration.loadConfiguration(file);
+        this.data = YamlConfiguration.loadConfiguration(file);
     }
 
     public boolean isImmortality(UUID uuid) {
@@ -183,22 +182,17 @@ public final class HollowAdminManager {
 
     public void applyVoicePermissions(Player player) {
         PermissionAttachment old =
-                voiceAttachments.remove(
-                        player.getUniqueId()
-                );
+                voiceAttachments.remove(player.getUniqueId());
 
         if (old != null) {
             player.removeAttachment(old);
         }
 
         boolean globalMute =
-                isGlobalVoiceMute()
-                        && !player.isOp();
+                isGlobalVoiceMute() && !player.isOp();
 
         boolean personalMute =
-                isVoiceMuted(
-                        player.getUniqueId()
-                );
+                isVoiceMuted(player.getUniqueId());
 
         boolean muteSpeaking =
                 globalMute || personalMute;
@@ -248,9 +242,7 @@ public final class HollowAdminManager {
 
     public ItemStack createRevivalHorn() {
         ItemStack item =
-                new ItemStack(
-                        org.bukkit.Material.GOAT_HORN
-                );
+                new ItemStack(Material.GOAT_HORN);
 
         ItemMeta meta =
                 item.getItemMeta();
@@ -283,8 +275,7 @@ public final class HollowAdminManager {
 
     public boolean isRevivalHorn(ItemStack item) {
         if (item == null
-                || item.getType()
-                != org.bukkit.Material.GOAT_HORN
+                || item.getType() != Material.GOAT_HORN
                 || !item.hasItemMeta()) {
             return false;
         }
@@ -361,7 +352,7 @@ public final class HollowAdminManager {
     }
 
     public ItemStack createGuiItem(
-            org.bukkit.Material material,
+            Material material,
             String name,
             NamedTextColor color
     ) {
@@ -374,7 +365,7 @@ public final class HollowAdminManager {
     }
 
     public ItemStack createGuiItem(
-            org.bukkit.Material material,
+            Material material,
             String name,
             NamedTextColor color,
             String lore
