@@ -4,9 +4,12 @@ main: com.domc888.heartsmp.HeartSMP
 api-version: '1.21.11'
 author: domc888
 
+softdepend:
+  - voicechat
+
 commands:
   hollowsmp:
-    description: HollowSMP admin menu
+    description: HollowSMP admin command and GUI
     usage: /hollowsmp
     permission: hollowsmp.admin
 
@@ -22,7 +25,7 @@ commands:
 
 permissions:
   hollowsmp.admin:
-    description: Allows access to the HollowSMP admin system
+    description: Allows access to /hollowsmp and /voicechatmute
     default: op
 
   heartsmp.lives:
