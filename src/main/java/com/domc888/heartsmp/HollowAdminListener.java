@@ -7,6 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class HollowAdminListener implements Listener {
@@ -27,6 +28,7 @@ public class HollowAdminListener implements Listener {
         if (clicked == null || clicked.getType().isAir()) return;
 
         int slot = event.getRawSlot();
+        if (slot < 0 || slot >= event.getInventory().getSize()) return;
 
         if (holder.getType() == HollowGuiHolder.Type.MAIN) {
             switch (slot) {
@@ -41,8 +43,8 @@ public class HollowAdminListener implements Listener {
                     // SLOT 4: TOGGLE FREEZE BARRIER
                     boolean currentState = plugin.getAdminManager().isFreezeBarrierActive();
                     plugin.getAdminManager().setFreezeBarrierActive(!currentState);
-                    String statusMsg = !currentState 
-                            ? ChatColor.AQUA + "[Freeze Barrier] " + ChatColor.GREEN + "ACTIVE. All non-OP players are frozen." 
+                    String statusMsg = !currentState
+                            ? ChatColor.AQUA + "[Freeze Barrier] " + ChatColor.GREEN + "ACTIVE. All non-OP players are frozen."
                             : ChatColor.AQUA + "[Freeze Barrier] " + ChatColor.RED + "DISABLED.";
                     admin.sendMessage(statusMsg);
 
@@ -50,6 +52,19 @@ public class HollowAdminListener implements Listener {
                     plugin.getAdminManager().openMainGUI(admin);
                 }
             }
+        } else if (holder.getType() == HollowGuiHolder.Type.ITEMS) {
+            String tag = plugin.getTokenItems().read(clicked);
+            ItemStack item = plugin.getTokenItems().create(tag);
+            if (item != null) {
+                admin.getInventory().addItem(item);
+                admin.sendMessage(ChatColor.GREEN + "You received the " + ChatColor.stripColor(
+                        item.getItemMeta() != null && item.getItemMeta().getDisplayName() != null
+                                ? item.getItemMeta().getDisplayName() : item.getType().name()) + ".");
+            }
+        } else if (holder.getType() == HollowGuiHolder.Type.PLAYERS) {
+            admin.sendMessage(ChatColor.GRAY + "Player: " + ChatColor.YELLOW + ChatColor.stripColor(
+                    clicked.getItemMeta() != null && clicked.getItemMeta().getDisplayName() != null
+                            ? clicked.getItemMeta().getDisplayName() : "?"));
         }
     }
 
@@ -58,13 +73,26 @@ public class HollowAdminListener implements Listener {
      */
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
+        if (!plugin.getAdminManager().isFreezeBarrierActive()) return;
+
         Player player = event.getPlayer();
-        if (plugin.getAdminManager().isFreezeBarrierActive() && !player.isOp()) {
-            if (event.getFrom().getX() != event.getTo().getX() || 
-                event.getFrom().getY() != event.getTo().getY() || 
-                event.getFrom().getZ() != event.getTo().getZ()) {
-                event.setTo(event.getFrom());
-            }
+        if (player.isOp()) return;
+
+        if (event.getFrom().getX() != event.getTo().getX() ||
+            event.getFrom().getY() != event.getTo().getY() ||
+            event.getFrom().getZ() != event.getTo().getZ()) {
+            event.setTo(event.getFrom());
         }
+    }
+
+    /**
+     * Blocks non-OP teleports (ender pearls, chorus fruit,
+     * commands by other plugins) while frozen.
+     */
+    @EventHandler
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        if (!plugin.getAdminManager().isFreezeBarrierActive()) return;
+        if (event.getPlayer().isOp()) return;
+        event.setCancelled(true);
     }
 }

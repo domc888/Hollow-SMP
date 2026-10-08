@@ -2,6 +2,7 @@ package com.domc888.heartsmp;
 
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
@@ -29,6 +30,10 @@ public final class LivesManager {
 
     public int getMaxLives() {
         return maxLives;
+    }
+
+    public int getStartingLives() {
+        return startingLives;
     }
 
     public int getLives(UUID id) {
@@ -85,6 +90,21 @@ public final class LivesManager {
         save();
 
         OfflinePlayerData.unban(plugin, id);
+    }
+
+    /**
+     * Revives the given offline player back to their starting
+     * number of lives. Returns false if they were not eliminated.
+     */
+    public boolean revivePlayer(OfflinePlayer target) {
+        UUID id = target.getUniqueId();
+
+        if (!isEliminated(id)) {
+            return false;
+        }
+
+        revive(id, startingLives);
+        return true;
     }
 
     public void applyState(Player player) {
@@ -148,7 +168,8 @@ public final class LivesManager {
                 return;
             }
 
-            String name = plugin.getServer()
+            String name = plugin
+                    .getServer()
                     .getOfflinePlayer(id)
                     .getName();
 

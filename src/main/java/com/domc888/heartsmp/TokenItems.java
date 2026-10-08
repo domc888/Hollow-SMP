@@ -49,4 +49,31 @@ public class TokenItems {
         }
         return item;
     }
+
+    /**
+     * Returns the persistent tag stored on the item by this class,
+     * or null if the item is not one of our custom items.
+     */
+    public String read(ItemStack item) {
+        if (item == null || item.getType().isAir() || !item.hasItemMeta()) {
+            return null;
+        }
+        return item.getItemMeta().getPersistentDataContainer().get(key, PersistentDataType.STRING);
+    }
+
+    /**
+     * Creates the custom item matching the given tag,
+     * or null if the tag is unknown.
+     */
+    public ItemStack create(String tag) {
+        if (tag == null) {
+            return null;
+        }
+        switch (tag) {
+            case "revival_token" -> { return createRevivalToken(); }
+            case "heart_container" -> { return createHeartContainer(); }
+            case "shrine_core" -> { return createShrineCore(); }
+            default -> { return null; }
+        }
+    }
 }
