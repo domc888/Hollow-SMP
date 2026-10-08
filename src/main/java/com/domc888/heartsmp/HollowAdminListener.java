@@ -95,7 +95,7 @@ public final class HollowAdminListener implements Listener {
          * Slot 3 = Proximity Chat
          */
         inventory.setItem(
-                3,
+                2,
                 manager.createGuiItem(
                         Material.JUKEBOX,
                         "Proximity Chat",
@@ -112,7 +112,7 @@ public final class HollowAdminListener implements Listener {
          * Slot 4 = Voice Chat Mute
          */
         inventory.setItem(
-                4,
+                3,
                 manager.createGuiItem(
                         Material.HEAVY_CORE,
                         "Voice Chat Mute",
