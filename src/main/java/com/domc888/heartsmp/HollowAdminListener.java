@@ -1,26 +1,24 @@
 package com.domc888.heartsmp;
 
 import io.papermc.paper.event.player.ChatEvent;
-import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.PlayerItemDamageEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerFoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.inventory.Inventory;
@@ -833,10 +831,12 @@ public final class HollowAdminListener implements Listener {
 
     @EventHandler
     public void onFoodChange(
-            PlayerFoodLevelChangeEvent event
+            FoodLevelChangeEvent event
     ) {
-        Player player =
-                event.getEntity();
+        if (!(event.getEntity()
+                instanceof Player player)) {
+            return;
+        }
 
         if (!manager.isSaturation(
                 player.getUniqueId()
