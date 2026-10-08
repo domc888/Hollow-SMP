@@ -6,18 +6,23 @@ author: domc888
 
 commands:
   hollowsmp:
-    description: HeartSMP admin command
-    usage: /<command> <setlives|give> ...
-    permission: heartsmp.admin
+    description: HollowSMP admin menu
+    usage: /hollowsmp
+    permission: hollowsmp.admin
 
   lives:
     description: Show how many lives you or another player have
-    usage: /<command> [player]
+    usage: /lives [player]
     permission: heartsmp.lives
 
+  voicechatmute:
+    description: Toggle a player's voice chat mute
+    usage: /voicechatmute <player>
+    permission: hollowsmp.admin
+
 permissions:
-  heartsmp.admin:
-    description: Allows /hollowsmp
+  hollowsmp.admin:
+    description: Allows access to the HollowSMP admin system
     default: op
 
   heartsmp.lives:
