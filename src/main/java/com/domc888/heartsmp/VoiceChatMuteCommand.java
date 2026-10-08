@@ -8,6 +8,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +38,7 @@ public final class VoiceChatMuteCommand
                             NamedTextColor.RED
                     )
             );
+
             return true;
         }
 
@@ -47,31 +49,28 @@ public final class VoiceChatMuteCommand
                             NamedTextColor.RED
                     )
             );
+
             return true;
         }
 
-        OfflinePlayer target =
-                Bukkit.getOfflinePlayer(args[0]);
+        Player target =
+                Bukkit.getPlayerExact(args[0]);
 
-        if (target.getName() == null) {
+        if (target == null) {
             sender.sendMessage(
                     Component.text(
-                            "Player not found.",
+                            "That player is not online.",
                             NamedTextColor.RED
                     )
             );
+
             return true;
         }
 
-        boolean newState =
-                !manager.isVoiceMuted(
+        boolean enabled =
+                manager.togglePersonalVoiceMute(
                         target.getUniqueId()
                 );
-
-        manager.setVoiceMuted(
-                target.getUniqueId(),
-                newState
-        );
 
         sender.sendMessage(
                 Component.text(
@@ -89,33 +88,31 @@ public final class VoiceChatMuteCommand
                         )
                 ).append(
                         Component.text(
-                                newState
+                                enabled
                                         ? "MUTED"
                                         : "UNMUTED",
-                                newState
+                                enabled
                                         ? NamedTextColor.RED
                                         : NamedTextColor.GREEN
                         )
                 )
         );
 
-        if (target.isOnline()) {
-            target.getPlayer().sendMessage(
-                    Component.text(
-                            "Your voice chat is now ",
-                            NamedTextColor.GRAY
-                    ).append(
-                            Component.text(
-                                    newState
-                                            ? "MUTED"
-                                            : "UNMUTED",
-                                    newState
-                                            ? NamedTextColor.RED
-                                            : NamedTextColor.GREEN
-                            )
-                    )
-            );
-        }
+        target.sendMessage(
+                Component.text(
+                        "Your voice chat is now ",
+                        NamedTextColor.GRAY
+                ).append(
+                        Component.text(
+                                enabled
+                                        ? "MUTED"
+                                        : "UNMUTED",
+                                enabled
+                                        ? NamedTextColor.RED
+                                        : NamedTextColor.GREEN
+                        )
+                )
+        );
 
         return true;
     }
@@ -138,7 +135,7 @@ public final class VoiceChatMuteCommand
         List<String> result =
                 new ArrayList<>();
 
-        for (org.bukkit.entity.Player player :
+        for (Player player :
                 Bukkit.getOnlinePlayers()) {
 
             if (player.getName()
