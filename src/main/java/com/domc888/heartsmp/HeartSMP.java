@@ -1,8 +1,11 @@
 package com.domc888.heartsmp;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
@@ -20,24 +23,26 @@ public final class HeartSMP extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
 
-        int max = Math.max(
-                1,
-                getConfig().getInt(
-                        "max-lives",
-                        3
-                )
-        );
-
-        int start = Math.min(
-                max,
+        int max =
                 Math.max(
                         1,
                         getConfig().getInt(
-                                "starting-lives",
-                                max
+                                "max-lives",
+                                3
                         )
-                )
-        );
+                );
+
+        int start =
+                Math.min(
+                        max,
+                        Math.max(
+                                1,
+                                getConfig().getInt(
+                                        "starting-lives",
+                                        max
+                                )
+                        )
+                );
 
         LivesManager lives =
                 new LivesManager(
@@ -66,35 +71,6 @@ public final class HeartSMP extends JavaPlugin {
                         tokens
                 );
 
-        PluginCommand hollowCommand =
-                Objects.requireNonNull(
-                        getCommand("hollowsmp")
-                );
-
-        hollowCommand.setExecutor(
-                heartCommand
-        );
-
-        hollowCommand.setTabCompleter(
-                heartCommand
-        );
-
-        LivesCommand livesCommand =
-                new LivesCommand(lives);
-
-        PluginCommand livesPluginCommand =
-                Objects.requireNonNull(
-                        getCommand("lives")
-                );
-
-        livesPluginCommand.setExecutor(
-                livesCommand
-        );
-
-        livesPluginCommand.setTabCompleter(
-                livesCommand
-        );
-
         NamespacedKey shrineKey =
                 new NamespacedKey(
                         this,
@@ -122,41 +98,127 @@ public final class HeartSMP extends JavaPlugin {
         );
 
         hollowAdminManager =
-                new HollowAdminManager(
+                new HollowAdminManager(this);
+
+        HollowAdminListener hollowListener =
+                new HollowAdminListener(
                         this,
-                        tokens
+                        hollowAdminManager,
+                        tokens,
+                        shrineKey
                 );
 
         getServer()
                 .getPluginManager()
                 .registerEvents(
-                        new HollowAdminListener(
-                                this,
-                                hollowAdminManager,
-                                tokens,
-                                shrineKey
-                        ),
+                        hollowListener,
                         this
                 );
 
-        VoiceChatMuteCommand voiceChatMute =
+        /*
+         * /hollowsmp
+         *
+         * No arguments:
+         * open the admin GUI.
+         *
+         * Arguments:
+         * pass through to the existing HeartCommand,
+         * preserving:
+         *
+         * /hollowsmp setlives ...
+         * /hollowsmp give ...
+         */
+        PluginCommand hollowCommand =
+                Objects.requireNonNull(
+                        getCommand("hollowsmp")
+                );
+
+        hollowCommand.setExecutor(
+                (sender, command, label, args) -> {
+
+                    if (!sender.isOp()) {
+                        sender.sendMessage(
+                                Component.text(
+                                        "Only server operators can use /hollowsmp.",
+                                        NamedTextColor.RED
+                                )
+                        );
+
+                        return true;
+                    }
+
+                    if (args.length == 0) {
+                        if (!(sender
+                                instanceof org.bukkit.entity.Player player)) {
+
+                            sender.sendMessage(
+                                    Component.text(
+                                            "The GUI can only be opened by a player.",
+                                            NamedTextColor.RED
+                                    )
+                            );
+
+                            return true;
+                        }
+
+                        hollowListener.openMain(player);
+
+                        return true;
+                    }
+
+                    return heartCommand.onCommand(
+                            sender,
+                            command,
+                            label,
+                            args
+                    );
+                }
+        );
+
+        hollowCommand.setTabCompleter(
+                (sender, command, alias, args) ->
+                        heartCommand.onTabComplete(
+                                sender,
+                                command,
+                                alias,
+                                args
+                        )
+        );
+
+        LivesCommand livesCommand =
+                new LivesCommand(lives);
+
+        PluginCommand livesPluginCommand =
+                Objects.requireNonNull(
+                        getCommand("lives")
+                );
+
+        livesPluginCommand.setExecutor(
+                livesCommand
+        );
+
+        livesPluginCommand.setTabCompleter(
+                livesCommand
+        );
+
+        VoiceChatMuteCommand voiceChatMuteCommand =
                 new VoiceChatMuteCommand(
                         hollowAdminManager
                 );
 
-        PluginCommand voiceChatMuteCommand =
+        PluginCommand voiceMute =
                 Objects.requireNonNull(
                         getCommand(
                                 "voicechatmute"
                         )
                 );
 
-        voiceChatMuteCommand.setExecutor(
-                voiceChatMute
+        voiceMute.setExecutor(
+                voiceChatMuteCommand
         );
 
-        voiceChatMuteCommand.setTabCompleter(
-                voiceChatMute
+        voiceMute.setTabCompleter(
+                voiceChatMuteCommand
         );
     }
 
