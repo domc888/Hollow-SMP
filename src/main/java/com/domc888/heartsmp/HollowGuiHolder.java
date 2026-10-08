@@ -18,6 +18,7 @@ public final class HollowGuiHolder implements InventoryHolder {
 
     private final Type type;
     private final UUID target;
+
     private Inventory inventory;
 
     public HollowGuiHolder(Type type) {
