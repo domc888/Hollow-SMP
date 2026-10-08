@@ -7,7 +7,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -61,7 +60,7 @@ public final class HollowAdminListener
         Inventory inventory =
                 Bukkit.createInventory(
                         holder,
-                        27,
+                        54,
                         Component.text(
                                 "HollowSMP",
                                 NamedTextColor.DARK_PURPLE
@@ -70,6 +69,10 @@ public final class HollowAdminListener
 
         holder.setInventory(inventory);
 
+        /*
+         * Slot 1
+         * Items
+         */
         inventory.setItem(
                 0,
                 manager.createGuiItem(
@@ -80,6 +83,10 @@ public final class HollowAdminListener
                 )
         );
 
+        /*
+         * Slot 2
+         * Players
+         */
         inventory.setItem(
                 1,
                 manager.createGuiItem(
@@ -90,8 +97,12 @@ public final class HollowAdminListener
                 )
         );
 
+        /*
+         * Slot 53
+         * Proximity Chat
+         */
         inventory.setItem(
-                25,
+                52,
                 manager.createGuiItem(
                         Material.JUKEBOX,
                         "Proximity Chat",
@@ -104,8 +115,12 @@ public final class HollowAdminListener
                 )
         );
 
+        /*
+         * Slot 54
+         * Voice Chat Mute
+         */
         inventory.setItem(
-                26,
+                53,
                 manager.createGuiItem(
                         Material.HEAVY_CORE,
                         "Voice chat mute",
@@ -362,7 +377,7 @@ public final class HollowAdminListener
 
         /*
          * Main inventory:
-         * 0-35
+         * slots 0-35
          */
         for (int i = 0; i < 36; i++) {
             inventory.setItem(
@@ -375,12 +390,13 @@ public final class HollowAdminListener
 
         /*
          * Armor:
-         * 45 helmet
-         * 46 chestplate
-         * 47 leggings
-         * 48 boots
          *
-         * 49 offhand
+         * 45 = Helmet
+         * 46 = Chestplate
+         * 47 = Leggings
+         * 48 = Boots
+         *
+         * 49 = Offhand
          */
         inventory.setItem(
                 45,
@@ -484,13 +500,14 @@ public final class HollowAdminListener
                 event.setCancelled(true);
 
                 switch (event.getRawSlot()) {
+
                     case 0 ->
                             openItems(admin);
 
                     case 1 ->
                             openPlayers(admin);
 
-                    case 25 -> {
+                    case 52 -> {
                         boolean enabled =
                                 manager.toggleProximityChat();
 
@@ -513,7 +530,7 @@ public final class HollowAdminListener
                         openMain(admin);
                     }
 
-                    case 26 -> {
+                    case 53 -> {
                         boolean enabled =
                                 manager.toggleGlobalVoiceMute();
 
@@ -543,8 +560,7 @@ public final class HollowAdminListener
 
             case ITEMS -> {
                 /*
-                 * Items menu is intentionally not cancelled.
-                 * OPs can take the items.
+                 * OPs can take items from this menu.
                  */
             }
 
@@ -703,16 +719,15 @@ public final class HollowAdminListener
 
             case PLAYER_INVENTORY -> {
                 /*
-                 * Only the top inventory is the target's
-                 * inventory. The bottom is the admin's.
-                 *
-                 * We synchronize on close.
+                 * Changes are synchronized when the
+                 * inventory is closed.
                  */
             }
 
             case PLAYER_ENDER_CHEST -> {
                 /*
-                 * Synchronize on close.
+                 * Changes are synchronized when the
+                 * inventory is closed.
                  */
             }
         }
@@ -735,14 +750,9 @@ public final class HollowAdminListener
                 event.getView().getTopInventory();
 
         if (!(top.getHolder()
-                instanceof HollowGuiHolder holder)) {
+                instanceof HollowGuiHolder)) {
             return;
         }
-
-        /*
-         * Allow normal item movement.
-         * The target is synchronized when the menu closes.
-         */
     }
 
     @EventHandler
@@ -871,15 +881,14 @@ public final class HollowAdminListener
         }
 
         /*
-         * Vanilla totems remain completely normal.
+         * Normal totems continue working.
          */
         if (hasTotem(player)) {
             return;
         }
 
         /*
-         * Already at half a heart:
-         * absolutely nothing can damage the player.
+         * At half a heart, nothing can kill them.
          */
         if (player.getHealth() <= 0.5) {
             event.setCancelled(true);
@@ -887,7 +896,7 @@ public final class HollowAdminListener
         }
 
         /*
-         * Reduce lethal damage to exactly half a heart.
+         * Lethal damage is reduced to half a heart.
          */
         double maximumAllowed =
                 player.getHealth() - 0.5;
@@ -920,8 +929,10 @@ public final class HollowAdminListener
         }
 
         /*
-         * Hunger bar stays full.
-         * Saturation is NOT artificially restored.
+         * Hunger bars stay full.
+         *
+         * Saturation is NOT restored here,
+         * so saturation can still naturally decrease.
          */
         event.setFoodLevel(20);
     }
@@ -1069,7 +1080,7 @@ public final class HollowAdminListener
             PlayerQuitEvent event
     ) {
         /*
-         * Persistent state remains in hollowsmp.yml.
+         * Persistent settings remain saved.
          */
     }
 
