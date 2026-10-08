@@ -54,9 +54,7 @@ public final class HollowAdminListener implements Listener {
         }
 
         HollowGuiHolder holder =
-                new HollowGuiHolder(
-                        HollowGuiHolder.Type.MAIN
-                );
+                new HollowGuiHolder(HollowGuiHolder.Type.MAIN);
 
         Inventory inventory =
                 Bukkit.createInventory(
@@ -91,11 +89,8 @@ public final class HollowAdminListener implements Listener {
                         500
                 );
 
-        /*
-         * Slot 3 = Proximity Chat
-         */
         inventory.setItem(
-                2,
+                3,
                 manager.createGuiItem(
                         Material.JUKEBOX,
                         "Proximity Chat",
@@ -108,11 +103,8 @@ public final class HollowAdminListener implements Listener {
                 )
         );
 
-        /*
-         * Slot 4 = Voice Chat Mute
-         */
         inventory.setItem(
-                3,
+                4,
                 manager.createGuiItem(
                         Material.HEAVY_CORE,
                         "Voice Chat Mute",
@@ -130,14 +122,23 @@ public final class HollowAdminListener implements Listener {
 
     private void openItems(Player player) {
         HollowGuiHolder holder =
-                new HollowGuiHolder(
-                        HollowGuiHolder.Type.ITEMS
-                );
+                new HollowGuiHolder(HollowGuiHolder.Type.ITEMS);
 
+        /*
+         * Slot 27 is used, so this needs 36 slots.
+         *
+         * 0  = Revival Shrine
+         * 1  = Revival Token
+         * 2  = Goat Horn
+         * 26 = Back Arrow
+         * 27 = Exit Barrier
+         *
+         * Every other slot is empty.
+         */
         Inventory inventory =
                 Bukkit.createInventory(
                         holder,
-                        27,
+                        36,
                         Component.text("HollowSMP Items")
                 );
 
@@ -151,16 +152,36 @@ public final class HollowAdminListener implements Listener {
         RevivalToken[] values =
                 RevivalToken.values();
 
-        for (int i = 0; i < values.length; i++) {
+        if (values.length > 0) {
             inventory.setItem(
-                    i + 1,
-                    tokens.create(values[i])
+                    1,
+                    tokens.create(values[0])
             );
         }
 
         inventory.setItem(
-                26,
+                2,
                 manager.createRevivalHorn()
+        );
+
+        inventory.setItem(
+                26,
+                manager.createGuiItem(
+                        Material.ARROW,
+                        "Back",
+                        NamedTextColor.YELLOW,
+                        "Return to HollowSMP menu"
+                )
+        );
+
+        inventory.setItem(
+                27,
+                manager.createGuiItem(
+                        Material.BARRIER,
+                        "Exit",
+                        NamedTextColor.RED,
+                        "Close menu"
+                )
         );
 
         player.openInventory(inventory);
@@ -168,9 +189,7 @@ public final class HollowAdminListener implements Listener {
 
     private void openPlayers(Player player) {
         HollowGuiHolder holder =
-                new HollowGuiHolder(
-                        HollowGuiHolder.Type.PLAYERS
-                );
+                new HollowGuiHolder(HollowGuiHolder.Type.PLAYERS);
 
         Inventory inventory =
                 Bukkit.createInventory(
@@ -215,11 +234,7 @@ public final class HollowAdminListener implements Listener {
                 head.setItemMeta(meta);
             }
 
-            inventory.setItem(
-                    slot,
-                    head
-            );
-
+            inventory.setItem(slot, head);
             slot++;
         }
 
@@ -252,9 +267,7 @@ public final class HollowAdminListener implements Listener {
                 Bukkit.createInventory(
                         holder,
                         27,
-                        Component.text(
-                                "Control: " + targetName
-                        )
+                        Component.text("Control: " + targetName)
                 );
 
         holder.setInventory(inventory);
@@ -368,14 +381,6 @@ public final class HollowAdminListener implements Listener {
             );
         }
 
-        /*
-         * Armor slots:
-         *
-         * 36 = Helmet
-         * 37 = Chestplate
-         * 38 = Leggings
-         * 39 = Boots
-         */
         inventory.setItem(
                 36,
                 cloneItem(
@@ -404,9 +409,6 @@ public final class HollowAdminListener implements Listener {
                 )
         );
 
-        /*
-         * Slot 40 = actual offhand.
-         */
         inventory.setItem(
                 40,
                 cloneItem(
@@ -414,12 +416,6 @@ public final class HollowAdminListener implements Listener {
                 )
         );
 
-        /*
-         * Fill unused slots with stained glass.
-         *
-         * Slot 40 is excluded because it is the
-         * editable offhand slot.
-         */
         ItemStack filler =
                 manager.createGuiItem(
                         Material.GRAY_STAINED_GLASS_PANE,
@@ -488,14 +484,11 @@ public final class HollowAdminListener implements Listener {
     public void onInventoryClick(
             InventoryClickEvent event
     ) {
-        if (!(event.getWhoClicked()
-                instanceof Player player)) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
 
-        if (!(event.getView()
-                .getTopInventory()
-                .getHolder()
+        if (!(event.getView().getTopInventory().getHolder()
                 instanceof HollowGuiHolder holder)) {
             return;
         }
@@ -508,9 +501,6 @@ public final class HollowAdminListener implements Listener {
         HollowGuiHolder.Type type =
                 holder.getType();
 
-        /*
-         * Locked GUIs.
-         */
         if (type == HollowGuiHolder.Type.MAIN
                 || type == HollowGuiHolder.Type.ITEMS
                 || type == HollowGuiHolder.Type.PLAYERS
@@ -519,9 +509,7 @@ public final class HollowAdminListener implements Listener {
             event.setCancelled(true);
 
             if (event.getRawSlot()
-                    >= event.getView()
-                    .getTopInventory()
-                    .getSize()) {
+                    >= event.getView().getTopInventory().getSize()) {
                 return;
             }
 
@@ -543,9 +531,7 @@ public final class HollowAdminListener implements Listener {
                                         NamedTextColor.GRAY
                                 ).append(
                                         Component.text(
-                                                enabled
-                                                        ? "ON"
-                                                        : "OFF",
+                                                enabled ? "ON" : "OFF",
                                                 enabled
                                                         ? NamedTextColor.GREEN
                                                         : NamedTextColor.RED
@@ -566,9 +552,7 @@ public final class HollowAdminListener implements Listener {
                                         NamedTextColor.GRAY
                                 ).append(
                                         Component.text(
-                                                enabled
-                                                        ? "ON"
-                                                        : "OFF",
+                                                enabled ? "ON" : "OFF",
                                                 enabled
                                                         ? NamedTextColor.RED
                                                         : NamedTextColor.GREEN
@@ -587,6 +571,58 @@ public final class HollowAdminListener implements Listener {
             }
 
             if (type == HollowGuiHolder.Type.ITEMS) {
+
+                switch (event.getRawSlot()) {
+
+                    /*
+                     * Slot 0 = Revival Shrine
+                     */
+                    case 0 -> {
+                        ItemStack item =
+                                ShrineItems.create(shrineKey);
+
+                        giveItem(player, item);
+                    }
+
+                    /*
+                     * Slot 1 = Revival Token
+                     */
+                    case 1 -> {
+                        RevivalToken[] values =
+                                RevivalToken.values();
+
+                        if (values.length > 0) {
+                            giveItem(
+                                    player,
+                                    tokens.create(values[0])
+                            );
+                        }
+                    }
+
+                    /*
+                     * Slot 2 = Goat Horn
+                     */
+                    case 2 -> {
+                        giveItem(
+                                player,
+                                manager.createRevivalHorn()
+                        );
+                    }
+
+                    /*
+                     * Slot 26 = Back
+                     */
+                    case 26 -> openMain(player);
+
+                    /*
+                     * Slot 27 = Exit
+                     */
+                    case 27 -> player.closeInventory();
+
+                    default -> {
+                    }
+                }
+
                 return;
             }
 
@@ -596,8 +632,7 @@ public final class HollowAdminListener implements Listener {
                         event.getCurrentItem();
 
                 if (clicked == null
-                        || clicked.getType()
-                        != Material.PLAYER_HEAD) {
+                        || clicked.getType() != Material.PLAYER_HEAD) {
                     return;
                 }
 
@@ -611,8 +646,7 @@ public final class HollowAdminListener implements Listener {
                 }
 
                 UUID targetId =
-                        skullMeta.getOwningPlayer()
-                                .getUniqueId();
+                        skullMeta.getOwningPlayer().getUniqueId();
 
                 openPlayerControl(
                         player,
@@ -635,9 +669,7 @@ public final class HollowAdminListener implements Listener {
 
                     case 0 -> {
                         boolean enabled =
-                                manager.toggleImmortality(
-                                        targetId
-                                );
+                                manager.toggleImmortality(targetId);
 
                         sendToggle(
                                 player,
@@ -654,9 +686,7 @@ public final class HollowAdminListener implements Listener {
 
                     case 1 -> {
                         boolean enabled =
-                                manager.toggleSaturation(
-                                        targetId
-                                );
+                                manager.toggleSaturation(targetId);
 
                         sendToggle(
                                 player,
@@ -673,9 +703,7 @@ public final class HollowAdminListener implements Listener {
 
                     case 2 -> {
                         boolean enabled =
-                                manager.toggleInfiniteArmor(
-                                        targetId
-                                );
+                                manager.toggleInfiniteArmor(targetId);
 
                         sendToggle(
                                 player,
@@ -710,14 +738,6 @@ public final class HollowAdminListener implements Listener {
             return;
         }
 
-        /*
-         * PLAYER_INVENTORY is editable.
-         *
-         * Slots 0-35 = normal inventory
-         * Slots 36-39 = armor
-         * Slot 40 = offhand
-         * Slots 41-53 = locked filler
-         */
         if (type == HollowGuiHolder.Type.PLAYER_INVENTORY) {
 
             int rawSlot =
@@ -728,21 +748,13 @@ public final class HollowAdminListener implements Listener {
                             .getTopInventory()
                             .getSize();
 
-            /*
-             * Only cancel clicks inside the filler area.
-             */
-            if (rawSlot >= 41
-                    && rawSlot < topSize) {
-
+            if (rawSlot >= 41 && rawSlot < topSize) {
                 event.setCancelled(true);
             }
 
             return;
         }
 
-        /*
-         * Ender chest remains fully editable.
-         */
         if (type == HollowGuiHolder.Type.PLAYER_ENDER_CHEST) {
             return;
         }
@@ -752,14 +764,11 @@ public final class HollowAdminListener implements Listener {
     public void onInventoryDrag(
             InventoryDragEvent event
     ) {
-        if (!(event.getWhoClicked()
-                instanceof Player player)) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
 
-        if (!(event.getView()
-                .getTopInventory()
-                .getHolder()
+        if (!(event.getView().getTopInventory().getHolder()
                 instanceof HollowGuiHolder holder)) {
             return;
         }
@@ -783,12 +792,6 @@ public final class HollowAdminListener implements Listener {
 
         if (type == HollowGuiHolder.Type.PLAYER_INVENTORY) {
 
-            /*
-             * Armor and offhand are intentionally allowed.
-             *
-             * Only slots 41-53 are blocked because
-             * they contain the GUI filler.
-             */
             for (int rawSlot : event.getRawSlots()) {
 
                 if (rawSlot >= 41
@@ -807,13 +810,11 @@ public final class HollowAdminListener implements Listener {
     public void onInventoryClose(
             InventoryCloseEvent event
     ) {
-        if (!(event.getPlayer()
-                instanceof Player admin)) {
+        if (!(event.getPlayer() instanceof Player admin)) {
             return;
         }
 
-        if (!(event.getInventory()
-                .getHolder()
+        if (!(event.getInventory().getHolder()
                 instanceof HollowGuiHolder holder)) {
             return;
         }
@@ -843,18 +844,11 @@ public final class HollowAdminListener implements Listener {
                     event.getInventory();
 
             ItemStack[] contents =
-                    new ItemStack[
-                            target.getEnderChest().getSize()
-                    ];
+                    new ItemStack[target.getEnderChest().getSize()];
 
-            for (int i = 0;
-                 i < contents.length;
-                 i++) {
-
+            for (int i = 0; i < contents.length; i++) {
                 contents[i] =
-                        cloneItem(
-                                viewer.getItem(i)
-                        );
+                        cloneItem(viewer.getItem(i));
             }
 
             target.getEnderChest()
@@ -876,61 +870,40 @@ public final class HollowAdminListener implements Listener {
             Inventory viewer =
                     event.getInventory();
 
-            /*
-             * Normal inventory.
-             */
             ItemStack[] main =
                     new ItemStack[36];
 
             for (int i = 0; i < 36; i++) {
                 main[i] =
-                        cloneItem(
-                                viewer.getItem(i)
-                        );
+                        cloneItem(viewer.getItem(i));
             }
 
             target.getInventory()
                     .setContents(main);
 
-            /*
-             * Armor.
-             */
             target.getInventory()
                     .setHelmet(
-                            cloneItem(
-                                    viewer.getItem(36)
-                            )
+                            cloneItem(viewer.getItem(36))
                     );
 
             target.getInventory()
                     .setChestplate(
-                            cloneItem(
-                                    viewer.getItem(37)
-                            )
+                            cloneItem(viewer.getItem(37))
                     );
 
             target.getInventory()
                     .setLeggings(
-                            cloneItem(
-                                    viewer.getItem(38)
-                            )
+                            cloneItem(viewer.getItem(38))
                     );
 
             target.getInventory()
                     .setBoots(
-                            cloneItem(
-                                    viewer.getItem(39)
-                            )
+                            cloneItem(viewer.getItem(39))
                     );
 
-            /*
-             * Offhand.
-             */
             target.getInventory()
                     .setItemInOffHand(
-                            cloneItem(
-                                    viewer.getItem(40)
-                            )
+                            cloneItem(viewer.getItem(40))
                     );
         }
     }
@@ -939,14 +912,11 @@ public final class HollowAdminListener implements Listener {
     public void onFoodChange(
             FoodLevelChangeEvent event
     ) {
-        if (!(event.getEntity()
-                instanceof Player player)) {
+        if (!(event.getEntity() instanceof Player player)) {
             return;
         }
 
-        if (!manager.isSaturation(
-                player.getUniqueId()
-        )) {
+        if (!manager.isSaturation(player.getUniqueId())) {
             return;
         }
 
@@ -960,9 +930,7 @@ public final class HollowAdminListener implements Listener {
         Player player =
                 event.getPlayer();
 
-        if (!manager.isInfiniteArmor(
-                player.getUniqueId()
-        )) {
+        if (!manager.isInfiniteArmor(player.getUniqueId())) {
             return;
         }
 
@@ -983,14 +951,11 @@ public final class HollowAdminListener implements Listener {
     public void onDamage(
             EntityDamageEvent event
     ) {
-        if (!(event.getEntity()
-                instanceof Player player)) {
+        if (!(event.getEntity() instanceof Player player)) {
             return;
         }
 
-        if (!manager.isImmortality(
-                player.getUniqueId()
-        )) {
+        if (!manager.isImmortality(player.getUniqueId())) {
             return;
         }
 
@@ -1031,9 +996,7 @@ public final class HollowAdminListener implements Listener {
         Player player =
                 event.getPlayer();
 
-        if (!manager.isImmortality(
-                player.getUniqueId()
-        )) {
+        if (!manager.isImmortality(player.getUniqueId())) {
             return;
         }
 
@@ -1086,14 +1049,10 @@ public final class HollowAdminListener implements Listener {
         }
 
         Player target =
-                Bukkit.getPlayerExact(
-                        split[1]
-                );
+                Bukkit.getPlayerExact(split[1]);
 
         if (target == null
-                || !manager.isImmortality(
-                        target.getUniqueId()
-                )) {
+                || !manager.isImmortality(target.getUniqueId())) {
             return;
         }
 
@@ -1168,8 +1127,7 @@ public final class HollowAdminListener implements Listener {
     public void onRevivalHorn(
             PlayerInteractEvent event
     ) {
-        if (!event.getAction()
-                .isRightClick()) {
+        if (!event.getAction().isRightClick()) {
             return;
         }
 
@@ -1191,9 +1149,18 @@ public final class HollowAdminListener implements Listener {
     public void onShrineBreak(
             BlockBreakEvent event
     ) {
-        /*
-         * Shrine breaking is handled by ShrineListener.
-         */
+        // Shrine breaking is handled by ShrineListener.
+    }
+
+    private void giveItem(
+            Player player,
+            ItemStack item
+    ) {
+        if (item == null || item.getType().isAir()) {
+            return;
+        }
+
+        player.getInventory().addItem(item);
     }
 
     private void sendToggle(
@@ -1208,9 +1175,7 @@ public final class HollowAdminListener implements Listener {
         String targetName =
                 target != null
                         ? target.getName()
-                        : Bukkit.getOfflinePlayer(
-                                targetId
-                        ).getName();
+                        : Bukkit.getOfflinePlayer(targetId).getName();
 
         if (targetName == null) {
             targetName = targetId.toString();
@@ -1230,9 +1195,7 @@ public final class HollowAdminListener implements Listener {
                             NamedTextColor.GRAY
                     ).append(
                             Component.text(
-                                    enabled
-                                            ? "ON"
-                                            : "OFF",
+                                    enabled ? "ON" : "OFF",
                                     enabled
                                             ? NamedTextColor.GREEN
                                             : NamedTextColor.RED
@@ -1243,8 +1206,6 @@ public final class HollowAdminListener implements Listener {
     }
 
     private ItemStack cloneItem(ItemStack item) {
-        return item == null
-                ? null
-                : item.clone();
+        return item == null ? null : item.clone();
     }
 }
