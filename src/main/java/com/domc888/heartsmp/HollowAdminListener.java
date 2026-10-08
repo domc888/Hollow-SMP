@@ -16,6 +16,10 @@ public class HollowAdminListener implements Listener {
         this.plugin = plugin;
     }
 
+    public void openMain(Player player) {
+        plugin.getAdminManager().openMainGUI(player);
+    }
+
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player admin)) return;
@@ -57,7 +61,7 @@ public class HollowAdminListener implements Listener {
                 }
             }
             case PLAYER_CONTROL -> {
-                // Handle player individual action clicks
+                // Individual action clicks
             }
         }
     }
