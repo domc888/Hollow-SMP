@@ -1,49 +1,52 @@
 package com.domc888.heartsmp;
 
 import io.papermc.paper.event.player.ChatEvent;
-import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.entity.PlayerItemDamageEvent;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerFoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public final class HollowAdminListener
-        implements Listener {
+public final class HollowAdminListener implements Listener {
 
     private final HeartSMP plugin;
     private final HollowAdminManager manager;
     private final TokenItems tokens;
-    private final org.bukkit.NamespacedKey shrineKey;
+    private final NamespacedKey shrineKey;
 
     public HollowAdminListener(
             HeartSMP plugin,
             HollowAdminManager manager,
             TokenItems tokens,
-            org.bukkit.NamespacedKey shrineKey
+            NamespacedKey shrineKey
     ) {
         this.plugin = plugin;
         this.manager = manager;
@@ -52,6 +55,10 @@ public final class HollowAdminListener
     }
 
     public void openMain(Player player) {
+        if (!player.isOp()) {
+            return;
+        }
+
         HollowGuiHolder holder =
                 new HollowGuiHolder(
                         HollowGuiHolder.Type.MAIN
@@ -62,45 +69,30 @@ public final class HollowAdminListener
                         holder,
                         54,
                         Component.text(
-                                "HollowSMP",
-                                NamedTextColor.DARK_PURPLE
+                                "HollowSMP"
                         )
                 );
 
         holder.setInventory(inventory);
 
-        /*
-         * Slot 1
-         * Items
-         */
         inventory.setItem(
                 0,
                 manager.createGuiItem(
                         Material.CHEST,
                         "Items",
-                        NamedTextColor.GOLD,
-                        "Open plugin items"
+                        NamedTextColor.GOLD
                 )
         );
 
-        /*
-         * Slot 2
-         * Players
-         */
         inventory.setItem(
                 1,
                 manager.createGuiItem(
                         Material.PLAYER_HEAD,
                         "Players",
-                        NamedTextColor.AQUA,
-                        "Manage online players"
+                        NamedTextColor.AQUA
                 )
         );
 
-        /*
-         * Slot 53
-         * Proximity Chat
-         */
         inventory.setItem(
                 52,
                 manager.createGuiItem(
@@ -110,15 +102,11 @@ public final class HollowAdminListener
                                 ? NamedTextColor.GREEN
                                 : NamedTextColor.RED,
                         manager.isProximityChat()
-                                ? "500 blocks: ON"
-                                : "500 blocks: OFF"
+                                ? "ON - 500 block chat range"
+                                : "OFF - normal chat range"
                 )
         );
 
-        /*
-         * Slot 54
-         * Voice Chat Mute
-         */
         inventory.setItem(
                 53,
                 manager.createGuiItem(
@@ -128,8 +116,8 @@ public final class HollowAdminListener
                                 ? NamedTextColor.RED
                                 : NamedTextColor.GREEN,
                         manager.isGlobalVoiceMute()
-                                ? "Non-OP voice chat: MUTED"
-                                : "Non-OP voice chat: ON"
+                                ? "ON - non-OP voice chat muted"
+                                : "OFF"
                 )
         );
 
@@ -146,44 +134,26 @@ public final class HollowAdminListener
                 Bukkit.createInventory(
                         holder,
                         27,
-                        Component.text(
-                                "Items",
-                                NamedTextColor.GOLD
-                        )
+                        Component.text("HollowSMP Items")
                 );
 
         holder.setInventory(inventory);
 
-        /*
-         * Slot 1
-         * Revival Shrine
-         */
         inventory.setItem(
                 0,
                 ShrineItems.create(shrineKey)
         );
 
-        /*
-         * Slots 2-26
-         * All 25 revival tokens.
-         */
-        int slot = 1;
+        RevivalToken[] values =
+                RevivalToken.values();
 
-        for (RevivalToken token :
-                RevivalToken.values()) {
-
+        for (int i = 0; i < values.length; i++) {
             inventory.setItem(
-                    slot,
-                    tokens.create(token)
+                    i + 1,
+                    tokens.create(values[i])
             );
-
-            slot++;
         }
 
-        /*
-         * Slot 27
-         * Revival horn.
-         */
         inventory.setItem(
                 26,
                 manager.createRevivalHorn()
@@ -201,11 +171,8 @@ public final class HollowAdminListener
         Inventory inventory =
                 Bukkit.createInventory(
                         holder,
-                        27,
-                        Component.text(
-                                "Players",
-                                NamedTextColor.AQUA
-                        )
+                        54,
+                        Component.text("Players")
                 );
 
         holder.setInventory(inventory);
@@ -215,31 +182,28 @@ public final class HollowAdminListener
         for (Player target :
                 Bukkit.getOnlinePlayers()) {
 
-            if (slot >= 27) {
+            if (slot >= inventory.getSize()) {
                 break;
             }
 
             ItemStack head =
                     PlayerHeadItems.create(target);
 
-            SkullMeta meta =
-                    (SkullMeta) head.getItemMeta();
+            ItemMeta meta =
+                    head.getItemMeta();
 
             if (meta != null) {
                 meta.displayName(
                         Component.text(
                                 target.getName(),
-                                NamedTextColor.GOLD
-                        ).decoration(
-                                net.kyori.adventure.text.format.TextDecoration.ITALIC,
-                                false
+                                NamedTextColor.YELLOW
                         )
                 );
 
                 meta.lore(
                         List.of(
                                 Component.text(
-                                        "Click to manage.",
+                                        "Click to manage player",
                                         NamedTextColor.GRAY
                                 )
                         )
@@ -249,11 +213,9 @@ public final class HollowAdminListener
             }
 
             inventory.setItem(
-                    slot,
+                    slot++,
                     head
             );
-
-            slot++;
         }
 
         player.openInventory(inventory);
@@ -261,12 +223,24 @@ public final class HollowAdminListener
 
     private void openPlayerControl(
             Player admin,
-            Player target
+            UUID targetId
     ) {
+        Player target =
+                Bukkit.getPlayer(targetId);
+
+        String targetName =
+                target != null
+                        ? target.getName()
+                        : Bukkit.getOfflinePlayer(targetId).getName();
+
+        if (targetName == null) {
+            targetName = targetId.toString();
+        }
+
         HollowGuiHolder holder =
                 new HollowGuiHolder(
                         HollowGuiHolder.Type.PLAYER_CONTROL,
-                        target.getUniqueId()
+                        targetId
                 );
 
         Inventory inventory =
@@ -274,25 +248,21 @@ public final class HollowAdminListener
                         holder,
                         27,
                         Component.text(
-                                target.getName(),
-                                NamedTextColor.GOLD
+                                "Control: " + targetName
                         )
                 );
 
         holder.setInventory(inventory);
-
-        UUID uuid =
-                target.getUniqueId();
 
         inventory.setItem(
                 0,
                 manager.createGuiItem(
                         Material.TOTEM_OF_UNDYING,
                         "Immortality",
-                        manager.isImmortality(uuid)
+                        manager.isImmortality(targetId)
                                 ? NamedTextColor.GREEN
                                 : NamedTextColor.RED,
-                        manager.isImmortality(uuid)
+                        manager.isImmortality(targetId)
                                 ? "ON"
                                 : "OFF"
                 )
@@ -303,10 +273,10 @@ public final class HollowAdminListener
                 manager.createGuiItem(
                         Material.GOLDEN_CARROT,
                         "Saturation",
-                        manager.isSaturation(uuid)
+                        manager.isSaturation(targetId)
                                 ? NamedTextColor.GREEN
                                 : NamedTextColor.RED,
-                        manager.isSaturation(uuid)
+                        manager.isSaturation(targetId)
                                 ? "ON"
                                 : "OFF"
                 )
@@ -317,10 +287,10 @@ public final class HollowAdminListener
                 manager.createGuiItem(
                         Material.IRON_CHESTPLATE,
                         "Infinite Armor",
-                        manager.isInfiniteArmor(uuid)
+                        manager.isInfiniteArmor(targetId)
                                 ? NamedTextColor.GREEN
                                 : NamedTextColor.RED,
-                        manager.isInfiniteArmor(uuid)
+                        manager.isInfiniteArmor(targetId)
                                 ? "ON"
                                 : "OFF"
                 )
@@ -332,7 +302,7 @@ public final class HollowAdminListener
                         Material.CHEST,
                         "Inventory",
                         NamedTextColor.GOLD,
-                        "Open and edit inventory"
+                        "View and edit inventory"
                 )
         );
 
@@ -342,7 +312,7 @@ public final class HollowAdminListener
                         Material.ENDER_CHEST,
                         "Ender Chest",
                         NamedTextColor.DARK_PURPLE,
-                        "Open and edit ender chest"
+                        "View and edit ender chest"
                 )
         );
 
@@ -351,12 +321,25 @@ public final class HollowAdminListener
 
     private void openPlayerInventory(
             Player admin,
-            Player target
+            UUID targetId
     ) {
+        Player target =
+                Bukkit.getPlayer(targetId);
+
+        if (target == null) {
+            admin.sendMessage(
+                    Component.text(
+                            "That player is no longer online.",
+                            NamedTextColor.RED
+                    )
+            );
+            return;
+        }
+
         HollowGuiHolder holder =
                 new HollowGuiHolder(
                         HollowGuiHolder.Type.PLAYER_INVENTORY,
-                        target.getUniqueId()
+                        targetId
                 );
 
         Inventory inventory =
@@ -364,86 +347,101 @@ public final class HollowAdminListener
                         holder,
                         54,
                         Component.text(
-                                target.getName()
-                                        + "'s Inventory",
-                                NamedTextColor.GOLD
+                                "Inventory: " + target.getName()
                         )
                 );
 
         holder.setInventory(inventory);
 
-        PlayerInventory targetInventory =
-                target.getInventory();
+        ItemStack[] contents =
+                target.getInventory().getContents();
 
-        /*
-         * Main inventory:
-         * slots 0-35
-         */
-        for (int i = 0; i < 36; i++) {
+        for (int i = 0;
+             i < contents.length && i < 36;
+             i++) {
+
             inventory.setItem(
                     i,
-                    cloneOrNull(
-                            targetInventory.getItem(i)
-                    )
+                    contents[i] == null
+                            ? null
+                            : contents[i].clone()
             );
         }
 
-        /*
-         * Armor:
-         *
-         * 45 = Helmet
-         * 46 = Chestplate
-         * 47 = Leggings
-         * 48 = Boots
-         *
-         * 49 = Offhand
-         */
         inventory.setItem(
-                45,
-                cloneOrNull(
-                        targetInventory.getHelmet()
-                )
+                36,
+                target.getInventory()
+                        .getHelmet() == null
+                        ? null
+                        : target.getInventory()
+                                .getHelmet()
+                                .clone()
         );
 
         inventory.setItem(
-                46,
-                cloneOrNull(
-                        targetInventory.getChestplate()
-                )
+                37,
+                target.getInventory()
+                        .getChestplate() == null
+                        ? null
+                        : target.getInventory()
+                                .getChestplate()
+                                .clone()
         );
 
         inventory.setItem(
-                47,
-                cloneOrNull(
-                        targetInventory.getLeggings()
-                )
+                38,
+                target.getInventory()
+                        .getLeggings() == null
+                        ? null
+                        : target.getInventory()
+                                .getLeggings()
+                                .clone()
         );
 
         inventory.setItem(
-                48,
-                cloneOrNull(
-                        targetInventory.getBoots()
-                )
+                39,
+                target.getInventory()
+                        .getBoots() == null
+                        ? null
+                        : target.getInventory()
+                                .getBoots()
+                                .clone()
         );
 
         inventory.setItem(
-                49,
-                cloneOrNull(
-                        targetInventory.getItemInOffHand()
-                )
+                40,
+                target.getInventory()
+                        .getItemInOffHand() == null
+                        ? null
+                        : target.getInventory()
+                                .getItemInOffHand()
+                                .clone()
         );
 
         admin.openInventory(inventory);
     }
 
-    private void openEnderChest(
+    private void openPlayerEnderChest(
             Player admin,
-            Player target
+            UUID targetId
     ) {
+        Player target =
+                Bukkit.getPlayer(targetId);
+
+        if (target == null) {
+            admin.sendMessage(
+                    Component.text(
+                            "That player is no longer online.",
+                            NamedTextColor.RED
+                    )
+            );
+            return;
+        }
+
         HollowGuiHolder holder =
                 new HollowGuiHolder(
                         HollowGuiHolder.Type.PLAYER_ENDER_CHEST,
-                        target.getUniqueId()
+                        targetId
                 );
 
         Inventory inventory =
@@ -451,23 +449,26 @@ public final class HollowAdminListener
                         holder,
                         27,
                         Component.text(
-                                target.getName()
-                                        + "'s Ender Chest",
-                                NamedTextColor.DARK_PURPLE
+                                "Ender Chest: "
+                                        + target.getName()
                         )
                 );
 
         holder.setInventory(inventory);
 
         ItemStack[] contents =
-                target.getEnderChest()
-                        .getContents();
+                target.getEnderChest().getContents();
 
-        for (int i = 0; i < contents.length; i++) {
-            inventory.setItem(
-                    i,
-                    cloneOrNull(contents[i])
-            );
+        for (int i = 0;
+             i < contents.length;
+             i++) {
+
+            if (contents[i] != null) {
+                inventory.setItem(
+                        i,
+                        contents[i].clone()
+                );
+            }
         }
 
         admin.openInventory(inventory);
@@ -478,99 +479,143 @@ public final class HollowAdminListener
             InventoryClickEvent event
     ) {
         if (!(event.getWhoClicked()
-                instanceof Player admin)) {
+                instanceof Player player)) {
             return;
         }
 
-        if (!admin.isOp()) {
-            return;
-        }
-
-        Inventory top =
-                event.getView().getTopInventory();
-
-        if (!(top.getHolder()
+        if (!(event.getView()
+                .getTopInventory()
+                .getHolder()
                 instanceof HollowGuiHolder holder)) {
             return;
         }
 
-        switch (holder.getType()) {
+        if (!player.isOp()) {
+            event.setCancelled(true);
+            return;
+        }
 
-            case MAIN -> {
-                event.setCancelled(true);
+        HollowGuiHolder.Type type =
+                holder.getType();
 
-                switch (event.getRawSlot()) {
+        /*
+         * These four GUIs are completely locked.
+         *
+         * This catches:
+         * - normal clicks
+         * - shift-clicks
+         * - hotbar swaps
+         * - number-key swaps
+         * - double-click collection
+         * - dropping items
+         * - picking items up
+         * - placing items
+         */
+        if (type == HollowGuiHolder.Type.MAIN
+                || type == HollowGuiHolder.Type.ITEMS
+                || type == HollowGuiHolder.Type.PLAYERS
+                || type == HollowGuiHolder.Type.PLAYER_CONTROL) {
 
-                    case 0 ->
-                            openItems(admin);
+            event.setCancelled(true);
 
-                    case 1 ->
-                            openPlayers(admin);
-
-                    case 52 -> {
-                        boolean enabled =
-                                manager.toggleProximityChat();
-
-                        admin.sendMessage(
-                                Component.text(
-                                        "Proximity chat is now ",
-                                        NamedTextColor.GRAY
-                                ).append(
-                                        Component.text(
-                                                enabled
-                                                        ? "ON"
-                                                        : "OFF",
-                                                enabled
-                                                        ? NamedTextColor.GREEN
-                                                        : NamedTextColor.RED
-                                        )
-                                )
-                        );
-
-                        openMain(admin);
-                    }
-
-                    case 53 -> {
-                        boolean enabled =
-                                manager.toggleGlobalVoiceMute();
-
-                        admin.sendMessage(
-                                Component.text(
-                                        "Voice chat mute is now ",
-                                        NamedTextColor.GRAY
-                                ).append(
-                                        Component.text(
-                                                enabled
-                                                        ? "ON"
-                                                        : "OFF",
-                                                enabled
-                                                        ? NamedTextColor.RED
-                                                        : NamedTextColor.GREEN
-                                        )
-                                )
-                        );
-
-                        openMain(admin);
-                    }
-
-                    default -> {
-                    }
-                }
+            /*
+             * Do not allow any interaction with the player's
+             * own inventory while one of these GUI menus is open.
+             */
+            if (event.getRawSlot()
+                    >= event.getView()
+                    .getTopInventory()
+                    .getSize()) {
+                return;
             }
 
-            case ITEMS -> {
-                /*
-                 * OPs can take items from this menu.
-                 */
-            }
+            if (type == HollowGuiHolder.Type.MAIN) {
 
-            case PLAYERS -> {
-                event.setCancelled(true);
-
-                if (event.getRawSlot() < 0
-                        || event.getRawSlot() >= 27) {
+                if (event.getRawSlot() == 0) {
+                    openItems(player);
                     return;
                 }
+
+                if (event.getRawSlot() == 1) {
+                    openPlayers(player);
+                    return;
+                }
+
+                if (event.getRawSlot() == 52) {
+
+                    boolean enabled =
+                            manager.toggleProximityChat();
+
+                    player.sendMessage(
+                            Component.text(
+                                    "Proximity chat is now ",
+                                    NamedTextColor.GRAY
+                            ).append(
+                                    Component.text(
+                                            enabled
+                                                    ? "ON"
+                                                    : "OFF",
+                                            enabled
+                                                    ? NamedTextColor.GREEN
+                                                    : NamedTextColor.RED
+                                    )
+                            );
+
+                    openMain(player);
+                    return;
+                }
+
+                if (event.getRawSlot() == 53) {
+
+                    boolean enabled =
+                            manager.toggleGlobalVoiceMute();
+
+                    player.sendMessage(
+                            Component.text(
+                                    "Global voice chat mute is now ",
+                                    NamedTextColor.GRAY
+                            ).append(
+                                    Component.text(
+                                            enabled
+                                                    ? "ON"
+                                                    : "OFF",
+                                            enabled
+                                                    ? NamedTextColor.RED
+                                                    : NamedTextColor.GREEN
+                                    )
+                            );
+
+                    openMain(player);
+                    return;
+                }
+
+                return;
+            }
+
+            if (type == HollowGuiHolder.Type.ITEMS) {
+
+                if (event.getRawSlot() == 26) {
+
+                    ItemStack horn =
+                            manager.createRevivalHorn();
+
+                    player.getInventory()
+                            .addItem(horn);
+
+                    player.sendMessage(
+                            Component.text(
+                                    "You received the Revival horn.",
+                                    NamedTextColor.LIGHT_PURPLE
+                            )
+                    );
+
+                    return;
+                }
+
+                return;
+            }
+
+            if (type == HollowGuiHolder.Type.PLAYERS) {
 
                 ItemStack clicked =
                         event.getCurrentItem();
@@ -582,62 +627,33 @@ public final class HollowAdminListener
                 }
 
                 if (!(clicked.getItemMeta()
-                        instanceof SkullMeta meta)) {
+                        instanceof SkullMeta skullMeta)) {
                     return;
                 }
 
-                OfflinePlayer owner =
-                        meta.getOwningPlayer();
-
-                if (owner == null) {
+                if (skullMeta.getOwningPlayer()
+                        == null) {
                     return;
                 }
 
-                Player target =
-                        Bukkit.getPlayer(
-                                owner.getUniqueId()
-                        );
-
-                if (target == null) {
-                    admin.sendMessage(
-                            Component.text(
-                                    "That player is no longer online.",
-                                    NamedTextColor.RED
-                            )
-                    );
-
-                    openPlayers(admin);
-                    return;
-                }
+                UUID targetId =
+                        skullMeta.getOwningPlayer()
+                                .getUniqueId();
 
                 openPlayerControl(
-                        admin,
-                        target
+                        player,
+                        targetId
                 );
+
+                return;
             }
 
-            case PLAYER_CONTROL -> {
-                event.setCancelled(true);
+            if (type == HollowGuiHolder.Type.PLAYER_CONTROL) {
 
                 UUID targetId =
                         holder.getTarget();
 
                 if (targetId == null) {
-                    return;
-                }
-
-                Player target =
-                        Bukkit.getPlayer(targetId);
-
-                if (target == null) {
-                    admin.sendMessage(
-                            Component.text(
-                                    "That player is no longer online.",
-                                    NamedTextColor.RED
-                            )
-                    );
-
-                    openPlayers(admin);
                     return;
                 }
 
@@ -649,16 +665,16 @@ public final class HollowAdminListener
                                         targetId
                                 );
 
-                        manager.sendToggleMessage(
-                                admin,
+                        sendToggle(
+                                player,
                                 "Immortality",
                                 enabled,
-                                target.getName()
+                                targetId
                         );
 
                         openPlayerControl(
-                                admin,
-                                target
+                                player,
+                                targetId
                         );
                     }
 
@@ -668,16 +684,16 @@ public final class HollowAdminListener
                                         targetId
                                 );
 
-                        manager.sendToggleMessage(
-                                admin,
+                        sendToggle(
+                                player,
                                 "Saturation",
                                 enabled,
-                                target.getName()
+                                targetId
                         );
 
                         openPlayerControl(
-                                admin,
-                                target
+                                player,
+                                targetId
                         );
                     }
 
@@ -687,50 +703,44 @@ public final class HollowAdminListener
                                         targetId
                                 );
 
-                        manager.sendToggleMessage(
-                                admin,
-                                "Infinite armor",
+                        sendToggle(
+                                player,
+                                "Infinite Armor",
                                 enabled,
-                                target.getName()
+                                targetId
                         );
 
                         openPlayerControl(
-                                admin,
-                                target
+                                player,
+                                targetId
                         );
                     }
 
                     case 18 ->
                             openPlayerInventory(
-                                    admin,
-                                    target
+                                    player,
+                                    targetId
                             );
 
                     case 19 ->
-                            openEnderChest(
-                                    admin,
-                                    target
+                            openPlayerEnderChest(
+                                    player,
+                                    targetId
                             );
 
                     default -> {
                     }
                 }
-            }
 
-            case PLAYER_INVENTORY -> {
-                /*
-                 * Changes are synchronized when the
-                 * inventory is closed.
-                 */
-            }
-
-            case PLAYER_ENDER_CHEST -> {
-                /*
-                 * Changes are synchronized when the
-                 * inventory is closed.
-                 */
+                return;
             }
         }
+
+        /*
+         * Inventory and Ender Chest viewers are intentionally
+         * NOT cancelled. OPs can freely move, take, place,
+         * swap and give items.
+         */
     }
 
     @EventHandler
@@ -738,7 +748,55 @@ public final class HollowAdminListener
             InventoryDragEvent event
     ) {
         if (!(event.getWhoClicked()
+                instanceof Player player)) {
+            return;
+        }
+
+        if (!(event.getView()
+                .getTopInventory()
+                .getHolder()
+                instanceof HollowGuiHolder holder)) {
+            return;
+        }
+
+        if (!player.isOp()) {
+            event.setCancelled(true);
+            return;
+        }
+
+        HollowGuiHolder.Type type =
+                holder.getType();
+
+        /*
+         * Absolutely prevent dragging items into any
+         * administrative menu.
+         */
+        if (type == HollowGuiHolder.Type.MAIN
+                || type == HollowGuiHolder.Type.ITEMS
+                || type == HollowGuiHolder.Type.PLAYERS
+                || type == HollowGuiHolder.Type.PLAYER_CONTROL) {
+
+            event.setCancelled(true);
+        }
+
+        /*
+         * PLAYER_INVENTORY and PLAYER_ENDER_CHEST intentionally
+         * remain editable.
+         */
+    }
+
+    @EventHandler
+    public void onInventoryClose(
+            InventoryCloseEvent event
+    ) {
+        if (!(event.getPlayer()
                 instanceof Player admin)) {
+            return;
+        }
+
+        if (!(event.getInventory()
+                .getHolder()
+                instanceof HollowGuiHolder holder)) {
             return;
         }
 
@@ -746,121 +804,184 @@ public final class HollowAdminListener
             return;
         }
 
-        Inventory top =
-                event.getView().getTopInventory();
+        UUID targetId =
+                holder.getTarget();
 
-        if (!(top.getHolder()
-                instanceof HollowGuiHolder)) {
+        if (targetId == null) {
             return;
         }
-    }
 
-    @EventHandler
-    public void onInventoryClose(
-            InventoryCloseEvent event
-    ) {
-        Inventory top =
-                event.getView().getTopInventory();
+        if (holder.getType()
+                == HollowGuiHolder.Type.PLAYER_ENDER_CHEST) {
 
-        if (!(top.getHolder()
-                instanceof HollowGuiHolder holder)) {
+            Player target =
+                    Bukkit.getPlayer(targetId);
+
+            if (target == null) {
+                return;
+            }
+
+            Inventory viewer =
+                    event.getInventory();
+
+            ItemStack[] contents =
+                    new ItemStack[
+                            target.getEnderChest()
+                                    .getSize()
+                    ];
+
+            for (int i = 0;
+                 i < contents.length
+                        && i < viewer.getSize();
+                 i++) {
+
+                ItemStack item =
+                        viewer.getItem(i);
+
+                contents[i] =
+                        item == null
+                                ? null
+                                : item.clone();
+            }
+
+            target.getEnderChest()
+                    .setContents(contents);
+
             return;
         }
 
         if (holder.getType()
                 == HollowGuiHolder.Type.PLAYER_INVENTORY) {
 
-            syncPlayerInventory(
-                    top,
-                    holder.getTarget()
-            );
-        }
+            Player target =
+                    Bukkit.getPlayer(targetId);
 
-        if (holder.getType()
-                == HollowGuiHolder.Type.PLAYER_ENDER_CHEST) {
+            if (target == null) {
+                return;
+            }
 
-            syncEnderChest(
-                    top,
-                    holder.getTarget()
-            );
+            Inventory viewer =
+                    event.getInventory();
+
+            ItemStack[] main =
+                    new ItemStack[36];
+
+            for (int i = 0; i < 36; i++) {
+
+                ItemStack item =
+                        viewer.getItem(i);
+
+                main[i] =
+                        item == null
+                                ? null
+                                : item.clone();
+            }
+
+            target.getInventory()
+                    .setContents(main);
+
+            ItemStack helmet =
+                    viewer.getItem(36);
+
+            ItemStack chestplate =
+                    viewer.getItem(37);
+
+            ItemStack leggings =
+                    viewer.getItem(38);
+
+            ItemStack boots =
+                    viewer.getItem(39);
+
+            ItemStack offhand =
+                    viewer.getItem(40);
+
+            target.getInventory()
+                    .setHelmet(
+                            helmet == null
+                                    ? null
+                                    : helmet.clone()
+                    );
+
+            target.getInventory()
+                    .setChestplate(
+                            chestplate == null
+                                    ? null
+                                    : chestplate.clone()
+                    );
+
+            target.getInventory()
+                    .setLeggings(
+                            leggings == null
+                                    ? null
+                                    : leggings.clone()
+                    );
+
+            target.getInventory()
+                    .setBoots(
+                            boots == null
+                                    ? null
+                                    : boots.clone()
+                    );
+
+            target.getInventory()
+                    .setItemInOffHand(
+                            offhand == null
+                                    ? null
+                                    : offhand.clone()
+                    );
         }
     }
 
-    private void syncPlayerInventory(
-            Inventory inventory,
-            UUID targetId
+    @EventHandler
+    public void onFoodChange(
+            PlayerFoodLevelChangeEvent event
     ) {
-        Player target =
-                Bukkit.getPlayer(targetId);
+        Player player =
+                event.getEntity();
 
-        if (target == null) {
+        if (!manager.isSaturation(
+                player.getUniqueId()
+        )) {
             return;
         }
 
-        PlayerInventory targetInventory =
-                target.getInventory();
-
-        for (int i = 0; i < 36; i++) {
-            targetInventory.setItem(
-                    i,
-                    cloneOrNull(
-                            inventory.getItem(i)
-                    )
-            );
-        }
-
-        targetInventory.setHelmet(
-                cloneOrNull(
-                        inventory.getItem(45)
-                )
-        );
-
-        targetInventory.setChestplate(
-                cloneOrNull(
-                        inventory.getItem(46)
-                )
-        );
-
-        targetInventory.setLeggings(
-                cloneOrNull(
-                        inventory.getItem(47)
-                )
-        );
-
-        targetInventory.setBoots(
-                cloneOrNull(
-                        inventory.getItem(48)
-                )
-        );
-
-        targetInventory.setItemInOffHand(
-                cloneOrNull(
-                        inventory.getItem(49)
-                )
-        );
+        event.setFoodLevel(20);
     }
 
-    private void syncEnderChest(
-            Inventory inventory,
-            UUID targetId
+    @EventHandler
+    public void onItemDamage(
+            PlayerItemDamageEvent event
     ) {
-        Player target =
-                Bukkit.getPlayer(targetId);
+        Player player =
+                event.getPlayer();
 
-        if (target == null) {
+        if (!manager.isInfiniteArmor(
+                player.getUniqueId()
+        )) {
             return;
         }
 
-        Inventory ender =
-                target.getEnderChest();
+        if (event.getItem()
+                .getType()
+                .toString()
+                .endsWith("_HELMET")
+                || event.getItem()
+                .getType()
+                .toString()
+                .endsWith("_CHESTPLATE")
+                || event.getItem()
+                .getType()
+                .toString()
+                .endsWith("_LEGGINGS")
+                || event.getItem()
+                .getType()
+                .toString()
+                .endsWith("_BOOTS")
+                || event.getItem()
+                .getType()
+                == Material.ELYTRA) {
 
-        for (int i = 0; i < 27; i++) {
-            ender.setItem(
-                    i,
-                    cloneOrNull(
-                            inventory.getItem(i)
-                    )
-            );
+            event.setCancelled(true);
         }
     }
 
@@ -873,87 +994,67 @@ public final class HollowAdminListener
             return;
         }
 
-        UUID uuid =
-                player.getUniqueId();
-
-        if (!manager.isImmortality(uuid)) {
-            return;
-        }
-
-        /*
-         * Normal totems continue working.
-         */
-        if (hasTotem(player)) {
-            return;
-        }
-
-        /*
-         * At half a heart, nothing can kill them.
-         */
-        if (player.getHealth() <= 0.5) {
-            event.setCancelled(true);
-            return;
-        }
-
-        /*
-         * Lethal damage is reduced to half a heart.
-         */
-        double maximumAllowed =
-                player.getHealth() - 0.5;
-
-        if (event.getFinalDamage()
-                >= maximumAllowed) {
-
-            event.setDamage(
-                    Math.max(
-                            0.0,
-                            maximumAllowed
-                    )
-            );
-        }
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onFoodLevelChange(
-            FoodLevelChangeEvent event
-    ) {
-        if (!(event.getEntity()
-                instanceof Player player)) {
-            return;
-        }
-
-        if (!manager.isSaturation(
+        if (!manager.isImmortality(
                 player.getUniqueId()
         )) {
             return;
         }
 
-        /*
-         * Hunger bars stay full.
-         *
-         * Saturation is NOT restored here,
-         * so saturation can still naturally decrease.
-         */
-        event.setFoodLevel(20);
-    }
+        double maxHealth =
+                player.getAttribute(
+                        Attribute.MAX_HEALTH
+                ) != null
+                        ? player.getAttribute(
+                                Attribute.MAX_HEALTH
+                        ).getValue()
+                        : 20.0;
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onArmorDamage(
-            PlayerItemDamageEvent event
-    ) {
-        if (!manager.isInfiniteArmor(
-                event.getPlayer()
-                        .getUniqueId()
-        )) {
+        double health =
+                player.getHealth();
+
+        double finalDamage =
+                event.getFinalDamage();
+
+        /*
+         * Already at half a heart:
+         * nothing can kill the player.
+         */
+        if (health <= 0.5) {
+            event.setCancelled(true);
+
+            Bukkit.getScheduler().runTask(
+                    plugin,
+                    () -> {
+                        if (player.isOnline()
+                                && manager.isImmortality(
+                                        player.getUniqueId()
+                                )) {
+                            player.setHealth(0.5);
+                        }
+                    }
+            );
+
             return;
         }
 
-        if (isArmor(event.getItem())) {
+        /*
+         * If this hit would kill the player, reduce it
+         * so they stop at exactly half a heart.
+         */
+        if (health - finalDamage <= 0.5) {
+
             event.setCancelled(true);
+
+            player.setHealth(
+                    Math.min(
+                            0.5,
+                            maxHealth
+                    )
+            );
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler
     public void onKillCommand(
             PlayerCommandPreprocessEvent event
     ) {
@@ -971,15 +1072,16 @@ public final class HollowAdminListener
                         .trim()
                         .toLowerCase();
 
-        if (!command.equals("/kill")
-                && !command.startsWith("/kill ")) {
-            return;
-        }
-
-        if (!hasTotem(player)
-                && player.getHealth() <= 0.5) {
+        if (command.equals("/kill")
+                || command.startsWith("/kill ")
+                || command.equals("/minecraft:kill")
+                || command.startsWith("/minecraft:kill ")) {
 
             event.setCancelled(true);
+
+            if (player.getHealth() > 0.5) {
+                player.setHealth(0.5);
+            }
 
             player.sendMessage(
                     Component.text(
@@ -990,70 +1092,52 @@ public final class HollowAdminListener
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onServerCommand(
+    @EventHandler
+    public void onServerKillCommand(
             ServerCommandEvent event
     ) {
         String command =
                 event.getCommand()
-                        .trim();
+                        .trim()
+                        .toLowerCase();
 
-        if (!command.toLowerCase()
-                .startsWith("kill ")) {
+        if (!command.equals("kill")
+                && !command.startsWith("kill ")
+                && !command.equals("minecraft:kill")
+                && !command.startsWith("minecraft:kill ")) {
             return;
         }
 
-        String[] parts =
+        String[] split =
                 command.split("\\s+");
 
-        if (parts.length < 2) {
+        if (split.length < 2) {
             return;
         }
 
         Player target =
-                Bukkit.getPlayerExact(parts[1]);
+                Bukkit.getPlayerExact(
+                        split[1]
+                );
 
-        if (target == null) {
-            return;
-        }
-
-        if (!manager.isImmortality(
-                target.getUniqueId()
-        )) {
-            return;
-        }
-
-        if (hasTotem(target)) {
-            return;
-        }
-
-        if (target.getHealth() <= 0.5) {
-            event.setCancelled(true);
-        }
-    }
-
-    @EventHandler
-    public void onRevivalHorn(
-            PlayerInteractEvent event
-    ) {
-        if (event.getAction()
-                != Action.RIGHT_CLICK_AIR
-                && event.getAction()
-                != Action.RIGHT_CLICK_BLOCK) {
-            return;
-        }
-
-        ItemStack item =
-                event.getItem();
-
-        if (!manager.isRevivalHorn(item)) {
+        if (target == null
+                || !manager.isImmortality(
+                        target.getUniqueId()
+                )) {
             return;
         }
 
         event.setCancelled(true);
 
-        manager.playRevivalHorn(
-                event.getPlayer()
+        if (target.getHealth() > 0.5) {
+            target.setHealth(0.5);
+        }
+
+        target.sendMessage(
+                Component.text(
+                        "Immortality prevented /kill.",
+                        NamedTextColor.GOLD
+                )
         );
     }
 
@@ -1061,27 +1145,9 @@ public final class HollowAdminListener
     public void onJoin(
             PlayerJoinEvent event
     ) {
-        Player player =
-                event.getPlayer();
-
         manager.applyVoicePermissions(
-                player
+                event.getPlayer()
         );
-
-        if (manager.isSaturation(
-                player.getUniqueId()
-        )) {
-            player.setFoodLevel(20);
-        }
-    }
-
-    @EventHandler
-    public void onQuit(
-            PlayerQuitEvent event
-    ) {
-        /*
-         * Persistent settings remain saved.
-         */
     }
 
     @EventHandler
@@ -1095,92 +1161,126 @@ public final class HollowAdminListener
         Player sender =
                 event.getPlayer();
 
+        double radius = 500.0;
         double radiusSquared =
-                500.0 * 500.0;
+                radius * radius;
 
-        for (Audience audience :
-                List.copyOf(event.viewers())) {
+        /*
+         * Work on a copy so modifying the viewers does
+         * not cause concurrent modification issues.
+         */
+        List<Player> viewers =
+                new ArrayList<>(
+                        event.viewers()
+                );
 
-            if (!(audience instanceof Player receiver)) {
-                continue;
-            }
+        for (Player receiver : viewers) {
 
             if (receiver.equals(sender)) {
                 continue;
             }
 
-            if (!receiver.getWorld().equals(
-                    sender.getWorld()
-            )
-                    || receiver.getLocation()
+            if (!receiver.getWorld()
+                    .equals(sender.getWorld())) {
+
+                event.viewers()
+                        .remove(receiver);
+
+                continue;
+            }
+
+            if (receiver.getLocation()
                     .distanceSquared(
                             sender.getLocation()
                     ) > radiusSquared) {
 
-                event.viewers().remove(
-                        receiver
-                );
+                event.viewers()
+                        .remove(receiver);
             }
         }
     }
 
-    private boolean hasTotem(Player player) {
-        return isTotem(
-                player.getInventory()
-                        .getItemInMainHand()
-        ) || isTotem(
-                player.getInventory()
-                        .getItemInOffHand()
-        );
-    }
-
-    private boolean isTotem(ItemStack item) {
-        return item != null
-                && item.getType()
-                == Material.TOTEM_OF_UNDYING
-                && item.getAmount() > 0;
-    }
-
-    private boolean isArmor(ItemStack item) {
-        if (item == null) {
-            return false;
+    @EventHandler
+    public void onRevivalHorn(
+            PlayerInteractEvent event
+    ) {
+        if (!event.getAction()
+                .isRightClick()) {
+            return;
         }
 
-        return switch (item.getType()) {
-            case LEATHER_HELMET,
-                 CHAINMAIL_HELMET,
-                 IRON_HELMET,
-                 GOLDEN_HELMET,
-                 DIAMOND_HELMET,
-                 NETHERITE_HELMET,
-                 TURTLE_HELMET,
-                 LEATHER_CHESTPLATE,
-                 CHAINMAIL_CHESTPLATE,
-                 IRON_CHESTPLATE,
-                 GOLDEN_CHESTPLATE,
-                 DIAMOND_CHESTPLATE,
-                 NETHERITE_CHESTPLATE,
-                 LEATHER_LEGGINGS,
-                 CHAINMAIL_LEGGINGS,
-                 IRON_LEGGINGS,
-                 GOLDEN_LEGGINGS,
-                 DIAMOND_LEGGINGS,
-                 NETHERITE_LEGGINGS,
-                 LEATHER_BOOTS,
-                 CHAINMAIL_BOOTS,
-                 IRON_BOOTS,
-                 GOLDEN_BOOTS,
-                 DIAMOND_BOOTS,
-                 NETHERITE_BOOTS,
-                 ELYTRA -> true;
+        ItemStack item =
+                event.getItem();
 
-            default -> false;
-        };
+        if (!manager.isRevivalHorn(item)) {
+            return;
+        }
+
+        event.setCancelled(true);
+
+        Player player =
+                event.getPlayer();
+
+        manager.playRevivalHorn(player);
     }
 
-    private ItemStack cloneOrNull(ItemStack item) {
-        return item == null
-                ? null
-                : item.clone();
+    @EventHandler
+    public void onShrineBreak(
+            BlockBreakEvent event
+    ) {
+        /*
+         * Prevent accidental shrine destruction by
+         * non-OPs only if needed by the admin item.
+         *
+         * The actual shrine system continues to be
+         * handled by ShrineListener.
+         */
+    }
+
+    private void sendToggle(
+            Player admin,
+            String feature,
+            boolean enabled,
+            UUID targetId
+    ) {
+        Player target =
+                Bukkit.getPlayer(targetId);
+
+        String targetName =
+                target != null
+                        ? target.getName()
+                        : Bukkit.getOfflinePlayer(
+                                targetId
+                        ).getName();
+
+        if (targetName == null) {
+            targetName = targetId.toString();
+        }
+
+        manager.sendToggleMessage(
+                admin,
+                feature,
+                enabled,
+                targetName
+        );
+
+        if (target != null) {
+
+            target.sendMessage(
+                    Component.text(
+                            feature + " is now ",
+                            NamedTextColor.GRAY
+                    ).append(
+                            Component.text(
+                                    enabled
+                                            ? "ON"
+                                            : "OFF",
+                                    enabled
+                                            ? NamedTextColor.GREEN
+                                            : NamedTextColor.RED
+                            )
+                    )
+            );
+        }
     }
 }
