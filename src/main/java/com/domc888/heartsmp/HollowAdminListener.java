@@ -1,6 +1,7 @@
 package com.domc888.heartsmp;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -16,56 +17,45 @@ public class HollowAdminListener implements Listener {
         this.plugin = plugin;
     }
 
-    public void openMain(Player player) {
-        plugin.getAdminManager().openMainGUI(player);
-    }
-
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player admin)) return;
         if (!(event.getInventory().getHolder() instanceof HollowGuiHolder holder)) return;
 
         event.setCancelled(true);
-
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || clicked.getType().isAir()) return;
 
         int slot = event.getRawSlot();
 
-        switch (holder.getType()) {
-            case MAIN -> {
-                switch (slot) {
-                    case 0 -> plugin.getAdminManager().openItemsGUI(admin);
-                    case 1 -> admin.sendMessage(ChatColor.YELLOW + "Player list selection opened.");
-                    case 2 -> admin.sendMessage(ChatColor.GREEN + "Audio controls opened.");
-                    case 3 -> admin.sendMessage(ChatColor.AQUA + "Shrine settings opened.");
-                    case 4 -> {
-                        boolean currentState = plugin.getAdminManager().isFreezeBarrierActive();
-                        plugin.getAdminManager().setFreezeBarrierActive(!currentState);
-                        String statusMsg = !currentState 
-                                ? ChatColor.GREEN + "Freeze Barrier is now ACTIVE. All non-OP players are frozen." 
-                                : ChatColor.RED + "Freeze Barrier is now DISABLED.";
-                        admin.sendMessage(statusMsg);
-                        plugin.getAdminManager().openMainGUI(admin);
-                    }
+        if (holder.getType() == HollowGuiHolder.Type.MAIN) {
+            switch (slot) {
+                case 0 -> plugin.getAdminManager().openItemsGUI(admin);
+                case 1 -> plugin.getAdminManager().openPlayersListGUI(admin);
+                case 2 -> {
+                    admin.playSound(admin.getLocation(), Sound.ITEM_GOAT_HORN_SOUND_0, 1.0f, 1.0f);
+                    admin.sendMessage(ChatColor.GREEN + "Played server audio.");
                 }
-            }
-            case ITEMS -> {
-                if (slot == 26) {
+                case 3 -> admin.sendMessage(ChatColor.AQUA + "Shrine settings opened.");
+                case 4 -> {
+                    // SLOT 4: TOGGLE FREEZE BARRIER
+                    boolean currentState = plugin.getAdminManager().isFreezeBarrierActive();
+                    plugin.getAdminManager().setFreezeBarrierActive(!currentState);
+                    String statusMsg = !currentState 
+                            ? ChatColor.AQUA + "[Freeze Barrier] " + ChatColor.GREEN + "ACTIVE. All non-OP players are frozen." 
+                            : ChatColor.AQUA + "[Freeze Barrier] " + ChatColor.RED + "DISABLED.";
+                    admin.sendMessage(statusMsg);
+
+                    // Refresh GUI immediately so Slot 4 icon updates
                     plugin.getAdminManager().openMainGUI(admin);
-                    return;
                 }
-                if (slot >= 0 && slot <= 2) {
-                    admin.getInventory().addItem(clicked.clone());
-                    admin.sendMessage(ChatColor.GREEN + "Gave " + clicked.getItemMeta().getDisplayName());
-                }
-            }
-            case PLAYER_CONTROL -> {
-                // Individual action clicks
             }
         }
     }
 
+    /**
+     * Cancels movement for non-OP players when the freeze barrier is active.
+     */
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
