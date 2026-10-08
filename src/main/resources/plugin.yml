@@ -1,37 +1,15 @@
 name: HeartSMP
 version: 1.0.0
 main: com.domc888.heartsmp.HeartSMP
-api-version: '1.21.11'
+api-version: '1.21'
 author: domc888
-
-softdepend:
-  - voicechat
+description: HeartSMP Core Plugin with Hollow Admin Interface.
 
 commands:
-  hollowsmp:
-    description: HollowSMP admin command and GUI
-    usage: /hollowsmp
-    permission: hollowsmp.admin
-
+  heart:
+    description: HeartSMP management command
+    permission: heartsmp.admin
   lives:
-    description: Show how many lives you or another player have
-    usage: /lives [player]
-    permission: heartsmp.lives
-
+    description: Manage player lives
   voicechatmute:
-    description: Toggle a player's voice chat mute
-    usage: /voicechatmute <player>
-    permission: hollowsmp.admin
-
-permissions:
-  hollowsmp.admin:
-    description: Allows access to /hollowsmp and /voicechatmute
-    default: op
-
-  heartsmp.lives:
-    description: Allows /lives
-    default: true
-
-  heartsmp.lives.others:
-    description: Allows /lives <player>
-    default: op
+    description: Mute players in voice chat
