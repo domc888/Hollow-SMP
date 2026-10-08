@@ -10,12 +10,16 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 public class HollowAdminManager {
 
     private final HeartSMP plugin;
     private boolean freezeBarrierActive = false;
+    private final Set<UUID> voiceMutedPlayers = new HashSet<>();
 
     public HollowAdminManager(HeartSMP plugin) {
         this.plugin = plugin;
@@ -29,6 +33,23 @@ public class HollowAdminManager {
         this.freezeBarrierActive = active;
     }
 
+    public void togglePersonalVoiceMute(UUID uuid) {
+        if (voiceMutedPlayers.contains(uuid)) {
+            voiceMutedPlayers.remove(uuid);
+        } else {
+            voiceMutedPlayers.add(uuid);
+        }
+    }
+
+    public boolean isVoiceMuted(UUID uuid) {
+        return voiceMutedPlayers.contains(uuid);
+    }
+
+    public void shutdown() {
+        voiceMutedPlayers.clear();
+        freezeBarrierActive = false;
+    }
+
     public void openMainGUI(Player admin) {
         Inventory gui = Bukkit.createInventory(
                 new HollowGuiHolder(HollowGuiHolder.Type.MAIN), 
@@ -36,7 +57,6 @@ public class HollowAdminManager {
                 ChatColor.DARK_GRAY + "HollowSMP"
         );
 
-        // Slot 0: Custom Items GUI
         ItemStack itemsIcon = new ItemStack(Material.CHEST);
         ItemMeta itemsMeta = itemsIcon.getItemMeta();
         if (itemsMeta != null) {
@@ -44,7 +64,6 @@ public class HollowAdminManager {
             itemsIcon.setItemMeta(itemsMeta);
         }
 
-        // Slot 1: Player Management / Heads
         ItemStack playersIcon = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta playersMeta = playersIcon.getItemMeta();
         if (playersMeta != null) {
@@ -52,7 +71,6 @@ public class HollowAdminManager {
             playersIcon.setItemMeta(playersMeta);
         }
 
-        // Slot 2: Jukebox / Audio Controls
         ItemStack musicIcon = new ItemStack(Material.JUKEBOX);
         ItemMeta musicMeta = musicIcon.getItemMeta();
         if (musicMeta != null) {
@@ -60,7 +78,6 @@ public class HollowAdminManager {
             musicIcon.setItemMeta(musicMeta);
         }
 
-        // Slot 3: Shrine Settings
         ItemStack shrineIcon = new ItemStack(Material.RESPAWN_ANCHOR);
         ItemMeta shrineMeta = shrineIcon.getItemMeta();
         if (shrineMeta != null) {
@@ -68,7 +85,6 @@ public class HollowAdminManager {
             shrineIcon.setItemMeta(shrineMeta);
         }
 
-        // Slot 4: Freeze Barrier Button
         ItemStack freezeIcon = new ItemStack(freezeBarrierActive ? Material.ICE : Material.PACKED_ICE);
         ItemMeta freezeMeta = freezeIcon.getItemMeta();
         if (freezeMeta != null) {
@@ -98,12 +114,10 @@ public class HollowAdminManager {
                 ChatColor.DARK_GRAY + "HollowSMP Items"
         );
 
-        // Place custom items consecutively starting at Slot 0
-        gui.setItem(0, TokenItems.createRevivalToken());
-        gui.setItem(1, TokenItems.createHeartContainer());
-        gui.setItem(2, TokenItems.createShrineCore());
+        gui.setItem(0, plugin.getTokenItems().createRevivalToken());
+        gui.setItem(1, plugin.getTokenItems().createHeartContainer());
+        gui.setItem(2, plugin.getTokenItems().createShrineCore());
 
-        // Slot 26: Return Arrow
         ItemStack back = new ItemStack(Material.ARROW);
         ItemMeta backMeta = back.getItemMeta();
         if (backMeta != null) {
@@ -122,7 +136,6 @@ public class HollowAdminManager {
                 ChatColor.DARK_GRAY + "Control: " + target.getName()
         );
 
-        // Slot 0: Revive / Totem
         ItemStack revive = new ItemStack(Material.TOTEM_OF_UNDYING);
         ItemMeta rMeta = revive.getItemMeta();
         if (rMeta != null) {
@@ -130,7 +143,6 @@ public class HollowAdminManager {
             revive.setItemMeta(rMeta);
         }
 
-        // Slot 1: Take Heart
         ItemStack takeHeart = new ItemStack(Material.GOLDEN_CARROT);
         ItemMeta tMeta = takeHeart.getItemMeta();
         if (tMeta != null) {
@@ -138,15 +150,13 @@ public class HollowAdminManager {
             takeHeart.setItemMeta(tMeta);
         }
 
-        // Slot 2: Invsee
-        ItemStack invsee = new ItemStack(Material.CHESTPLATE);
+        ItemStack invsee = new ItemStack(Material.NETHERITE_CHESTPLATE);
         ItemMeta iMeta = invsee.getItemMeta();
         if (iMeta != null) {
             iMeta.setDisplayName(ChatColor.YELLOW + "Inspect Inventory");
             invsee.setItemMeta(iMeta);
         }
 
-        // Slot 3: Enderchest
         ItemStack ender = new ItemStack(Material.ENDER_CHEST);
         ItemMeta eMeta = ender.getItemMeta();
         if (eMeta != null) {
@@ -154,7 +164,6 @@ public class HollowAdminManager {
             ender.setItemMeta(eMeta);
         }
 
-        // Slot 4: Player Head Info
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta hMeta = (SkullMeta) head.getItemMeta();
         if (hMeta != null) {
