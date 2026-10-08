@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,7 +16,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -179,6 +179,34 @@ public final class ShrineListener implements Listener {
          */
         Bukkit.getBanList(BanList.Type.NAME)
                 .pardon(playerName);
+
+        /*
+         * Permanently consume the revival shrine.
+         *
+         * Remove it from the ShrineManager first so
+         * nothing else can treat this block as a shrine.
+         */
+        Block shrineBlock = shrine.getBlock();
+
+        shrines.remove(shrineBlock);
+
+        /*
+         * Remove the actual shrine block from the world.
+         */
+        shrineBlock.setType(Material.AIR, false);
+
+        /*
+         * Play the End Portal opening sound to every
+         * online player.
+         */
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.playSound(
+                    player.getLocation(),
+                    Sound.BLOCK_END_PORTAL_SPAWN,
+                    1.0f,
+                    1.0f
+            );
+        }
 
         /*
          * A LOT of lightning around the shrine.
