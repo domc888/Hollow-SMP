@@ -13,7 +13,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
-import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -26,8 +25,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.event.block.Action;
 
 import java.util.List;
 import java.util.UUID;
@@ -38,38 +35,6 @@ public final class HollowAdminListener implements Listener {
     private final HollowAdminManager manager;
     private final TokenItems tokens;
     private final NamespacedKey shrineKey;
-
-    private static final int SLOT_MAIN_ITEMS = 0;
-    private static final int SLOT_MAIN_PLAYERS = 1;
-    private static final int SLOT_MAIN_PROXIMITY = 52;
-    private static final int SLOT_MAIN_VOICE = 53;
-    private static final int SLOT_MAIN_EXIT = 49;
-
-    private static final int SLOT_ITEMS_SHRINE = 0;
-    private static final int SLOT_ITEMS_TOKEN = 1;
-    private static final int SLOT_ITEMS_HORN = 2;
-    private static final int SLOT_ITEMS_BACK = 20;
-    private static final int SLOT_ITEMS_EXIT = 22;
-
-    private static final int SLOT_PLAYERS_BACK = 52;
-    private static final int SLOT_PLAYERS_EXIT = 53;
-
-    private static final int SLOT_CONTROL_IMMORTALITY = 0;
-    private static final int SLOT_CONTROL_SATURATION = 1;
-    private static final int SLOT_CONTROL_ARMOR = 2;
-    private static final int SLOT_CONTROL_INVENTORY = 3;
-    private static final int SLOT_CONTROL_ENDER = 4;
-    private static final int SLOT_CONTROL_BACK = 20;
-    private static final int SLOT_CONTROL_EXIT = 22;
-
-    private static final int SLOT_INV_HELMET = 36;
-    private static final int SLOT_INV_CHESTPLATE = 37;
-    private static final int SLOT_INV_LEGGINGS = 38;
-    private static final int SLOT_INV_BOOTS = 39;
-    private static final int SLOT_INV_OFFHAND = 40;
-
-    private static final int SLOT_INV_BACK = 49;
-    private static final int SLOT_INV_EXIT = 53;
 
     public HollowAdminListener(
             HeartSMP plugin,
@@ -96,14 +61,14 @@ public final class HollowAdminListener implements Listener {
         Inventory inventory =
                 Bukkit.createInventory(
                         holder,
-                        54,
+                        27,
                         Component.text("HollowSMP")
                 );
 
         holder.setInventory(inventory);
 
         inventory.setItem(
-                SLOT_MAIN_ITEMS,
+                0,
                 manager.createGuiItem(
                         Material.CHEST,
                         "Items",
@@ -112,7 +77,7 @@ public final class HollowAdminListener implements Listener {
         );
 
         inventory.setItem(
-                SLOT_MAIN_PLAYERS,
+                1,
                 manager.createGuiItem(
                         Material.PLAYER_HEAD,
                         "Players",
@@ -126,8 +91,11 @@ public final class HollowAdminListener implements Listener {
                         500
                 );
 
+        /*
+         * Slot 3 = Proximity Chat
+         */
         inventory.setItem(
-                SLOT_MAIN_PROXIMITY,
+                3,
                 manager.createGuiItem(
                         Material.JUKEBOX,
                         "Proximity Chat",
@@ -140,26 +108,20 @@ public final class HollowAdminListener implements Listener {
                 )
         );
 
+        /*
+         * Slot 4 = Voice Chat Mute
+         */
         inventory.setItem(
-                SLOT_MAIN_VOICE,
+                4,
                 manager.createGuiItem(
                         Material.HEAVY_CORE,
-                        "Voice chat mute",
+                        "Voice Chat Mute",
                         manager.isGlobalVoiceMute()
                                 ? NamedTextColor.RED
                                 : NamedTextColor.GREEN,
                         manager.isGlobalVoiceMute()
                                 ? "ON - non-OP voice chat muted"
                                 : "OFF"
-                )
-        );
-
-        inventory.setItem(
-                SLOT_MAIN_EXIT,
-                manager.createGuiItem(
-                        Material.BARRIER,
-                        "Out",
-                        NamedTextColor.RED
                 )
         );
 
@@ -182,41 +144,23 @@ public final class HollowAdminListener implements Listener {
         holder.setInventory(inventory);
 
         inventory.setItem(
-                SLOT_ITEMS_SHRINE,
+                0,
                 ShrineItems.create(shrineKey)
         );
 
         RevivalToken[] values =
                 RevivalToken.values();
 
-        if (values.length > 0) {
+        for (int i = 0; i < values.length; i++) {
             inventory.setItem(
-                    SLOT_ITEMS_TOKEN,
-                    tokens.create(values[0])
+                    i + 1,
+                    tokens.create(values[i])
             );
         }
 
         inventory.setItem(
-                SLOT_ITEMS_HORN,
+                26,
                 manager.createRevivalHorn()
-        );
-
-        inventory.setItem(
-                SLOT_ITEMS_BACK,
-                manager.createGuiItem(
-                        Material.ARROW,
-                        "Go Back",
-                        NamedTextColor.YELLOW
-                )
-        );
-
-        inventory.setItem(
-                SLOT_ITEMS_EXIT,
-                manager.createGuiItem(
-                        Material.BARRIER,
-                        "Out",
-                        NamedTextColor.RED
-                )
         );
 
         player.openInventory(inventory);
@@ -240,7 +184,8 @@ public final class HollowAdminListener implements Listener {
         int slot = 0;
 
         for (Player target : Bukkit.getOnlinePlayers()) {
-            if (slot >= 45) {
+
+            if (slot >= inventory.getSize()) {
                 break;
             }
 
@@ -277,24 +222,6 @@ public final class HollowAdminListener implements Listener {
 
             slot++;
         }
-
-        inventory.setItem(
-                SLOT_PLAYERS_BACK,
-                manager.createGuiItem(
-                        Material.ARROW,
-                        "Go Back",
-                        NamedTextColor.YELLOW
-                )
-        );
-
-        inventory.setItem(
-                SLOT_PLAYERS_EXIT,
-                manager.createGuiItem(
-                        Material.BARRIER,
-                        "Out",
-                        NamedTextColor.RED
-                )
-        );
 
         player.openInventory(inventory);
     }
@@ -333,7 +260,7 @@ public final class HollowAdminListener implements Listener {
         holder.setInventory(inventory);
 
         inventory.setItem(
-                SLOT_CONTROL_IMMORTALITY,
+                0,
                 manager.createGuiItem(
                         Material.TOTEM_OF_UNDYING,
                         "Immortality",
@@ -347,7 +274,7 @@ public final class HollowAdminListener implements Listener {
         );
 
         inventory.setItem(
-                SLOT_CONTROL_SATURATION,
+                1,
                 manager.createGuiItem(
                         Material.GOLDEN_CARROT,
                         "Saturation",
@@ -361,7 +288,7 @@ public final class HollowAdminListener implements Listener {
         );
 
         inventory.setItem(
-                SLOT_CONTROL_ARMOR,
+                2,
                 manager.createGuiItem(
                         Material.IRON_CHESTPLATE,
                         "Infinite Armor",
@@ -375,7 +302,7 @@ public final class HollowAdminListener implements Listener {
         );
 
         inventory.setItem(
-                SLOT_CONTROL_INVENTORY,
+                18,
                 manager.createGuiItem(
                         Material.CHEST,
                         "Inventory",
@@ -385,30 +312,12 @@ public final class HollowAdminListener implements Listener {
         );
 
         inventory.setItem(
-                SLOT_CONTROL_ENDER,
+                19,
                 manager.createGuiItem(
                         Material.ENDER_CHEST,
                         "Ender Chest",
                         NamedTextColor.DARK_PURPLE,
                         "View and edit ender chest"
-                )
-        );
-
-        inventory.setItem(
-                SLOT_CONTROL_BACK,
-                manager.createGuiItem(
-                        Material.ARROW,
-                        "Go Back",
-                        NamedTextColor.YELLOW
-                )
-        );
-
-        inventory.setItem(
-                SLOT_CONTROL_EXIT,
-                manager.createGuiItem(
-                        Material.BARRIER,
-                        "Out",
-                        NamedTextColor.RED
                 )
         );
 
@@ -459,68 +368,71 @@ public final class HollowAdminListener implements Listener {
             );
         }
 
+        /*
+         * Armor slots:
+         *
+         * 36 = Helmet
+         * 37 = Chestplate
+         * 38 = Leggings
+         * 39 = Boots
+         */
         inventory.setItem(
-                SLOT_INV_HELMET,
-                armorOrPane(
-                        target.getInventory().getHelmet(),
-                        Material.PURPLE_STAINED_GLASS_PANE,
-                        "Helmet"
+                36,
+                cloneItem(
+                        target.getInventory().getHelmet()
                 )
         );
 
         inventory.setItem(
-                SLOT_INV_CHESTPLATE,
-                armorOrPane(
-                        target.getInventory().getChestplate(),
-                        Material.PURPLE_STAINED_GLASS_PANE,
-                        "Chestplate"
+                37,
+                cloneItem(
+                        target.getInventory().getChestplate()
                 )
         );
 
         inventory.setItem(
-                SLOT_INV_LEGGINGS,
-                armorOrPane(
-                        target.getInventory().getLeggings(),
-                        Material.PURPLE_STAINED_GLASS_PANE,
-                        "Leggings"
+                38,
+                cloneItem(
+                        target.getInventory().getLeggings()
                 )
         );
 
         inventory.setItem(
-                SLOT_INV_BOOTS,
-                armorOrPane(
-                        target.getInventory().getBoots(),
-                        Material.PURPLE_STAINED_GLASS_PANE,
-                        "Boots"
+                39,
+                cloneItem(
+                        target.getInventory().getBoots()
                 )
         );
 
+        /*
+         * Slot 40 = actual offhand.
+         */
         inventory.setItem(
-                SLOT_INV_OFFHAND,
-                armorOrPane(
-                        target.getInventory().getItemInOffHand(),
-                        Material.ORANGE_STAINED_GLASS_PANE,
-                        "Offhand"
+                40,
+                cloneItem(
+                        target.getInventory().getItemInOffHand()
                 )
         );
 
-        inventory.setItem(
-                SLOT_INV_BACK,
+        /*
+         * Fill unused slots with stained glass.
+         *
+         * Slot 40 is excluded because it is the
+         * editable offhand slot.
+         */
+        ItemStack filler =
                 manager.createGuiItem(
-                        Material.ARROW,
-                        "Go Back",
-                        NamedTextColor.YELLOW
-                )
-        );
+                        Material.GRAY_STAINED_GLASS_PANE,
+                        " ",
+                        NamedTextColor.GRAY
+                );
 
-        inventory.setItem(
-                SLOT_INV_EXIT,
-                manager.createGuiItem(
-                        Material.BARRIER,
-                        "Out",
-                        NamedTextColor.RED
-                )
-        );
+        for (int i = 41; i < 54; i++) {
+            inventory.setItem(
+                    i,
+                    filler.clone()
+            );
+        }
 
         admin.openInventory(inventory);
     }
@@ -569,24 +481,6 @@ public final class HollowAdminListener implements Listener {
             );
         }
 
-        inventory.setItem(
-                25,
-                manager.createGuiItem(
-                        Material.ARROW,
-                        "Go Back",
-                        NamedTextColor.YELLOW
-                )
-        );
-
-        inventory.setItem(
-                26,
-                manager.createGuiItem(
-                        Material.BARRIER,
-                        "Out",
-                        NamedTextColor.RED
-                )
-        );
-
         admin.openInventory(inventory);
     }
 
@@ -614,367 +508,243 @@ public final class HollowAdminListener implements Listener {
         HollowGuiHolder.Type type =
                 holder.getType();
 
-        if (type == HollowGuiHolder.Type.PLAYER_INVENTORY
-                || type == HollowGuiHolder.Type.PLAYER_ENDER_CHEST) {
+        /*
+         * Locked GUIs.
+         */
+        if (type == HollowGuiHolder.Type.MAIN
+                || type == HollowGuiHolder.Type.ITEMS
+                || type == HollowGuiHolder.Type.PLAYERS
+                || type == HollowGuiHolder.Type.PLAYER_CONTROL) {
 
-            handleEditorClick(event, player, holder);
-            return;
-        }
+            event.setCancelled(true);
 
-        event.setCancelled(true);
-
-        int slot = event.getRawSlot();
-
-        if (slot < 0
-                || slot >= event.getView()
-                .getTopInventory()
-                .getSize()) {
-            return;
-        }
-
-        switch (type) {
-            case MAIN -> handleMainClick(
-                    event,
-                    player,
-                    slot
-            );
-
-            case ITEMS -> handleItemsClick(
-                    player,
-                    slot
-            );
-
-            case PLAYERS -> handlePlayersClick(
-                    event,
-                    player,
-                    slot
-            );
-
-            case PLAYER_CONTROL -> handlePlayerControlClick(
-                    player,
-                    holder,
-                    slot
-            );
-
-            default -> {
+            if (event.getRawSlot()
+                    >= event.getView()
+                    .getTopInventory()
+                    .getSize()) {
+                return;
             }
-        }
-    }
 
-    private void handleMainClick(
-            InventoryClickEvent event,
-            Player player,
-            int slot
-    ) {
-        switch (slot) {
-            case SLOT_MAIN_ITEMS ->
-                    openItems(player);
+            if (type == HollowGuiHolder.Type.MAIN) {
 
-            case SLOT_MAIN_PLAYERS ->
-                    openPlayers(player);
+                switch (event.getRawSlot()) {
 
-            case SLOT_MAIN_PROXIMITY -> {
-                boolean enabled =
-                        manager.toggleProximityChat();
+                    case 0 -> openItems(player);
 
-                player.sendMessage(
-                        Component.text(
-                                "Proximity chat is now ",
-                                NamedTextColor.GRAY
-                        ).append(
+                    case 1 -> openPlayers(player);
+
+                    case 3 -> {
+                        boolean enabled =
+                                manager.toggleProximityChat();
+
+                        player.sendMessage(
                                 Component.text(
-                                        enabled
-                                                ? "ON"
-                                                : "OFF",
-                                        enabled
-                                                ? NamedTextColor.GREEN
-                                                : NamedTextColor.RED
+                                        "Proximity chat is now ",
+                                        NamedTextColor.GRAY
+                                ).append(
+                                        Component.text(
+                                                enabled
+                                                        ? "ON"
+                                                        : "OFF",
+                                                enabled
+                                                        ? NamedTextColor.GREEN
+                                                        : NamedTextColor.RED
+                                        )
                                 )
-                        )
-                );
+                        );
 
-                openMain(player);
-            }
+                        openMain(player);
+                    }
 
-            case SLOT_MAIN_VOICE -> {
-                boolean enabled =
-                        manager.toggleGlobalVoiceMute();
+                    case 4 -> {
+                        boolean enabled =
+                                manager.toggleGlobalVoiceMute();
 
-                player.sendMessage(
-                        Component.text(
-                                "Global voice chat mute is now ",
-                                NamedTextColor.GRAY
-                        ).append(
+                        player.sendMessage(
                                 Component.text(
-                                        enabled
-                                                ? "ON"
-                                                : "OFF",
-                                        enabled
-                                                ? NamedTextColor.RED
-                                                : NamedTextColor.GREEN
+                                        "Global voice chat mute is now ",
+                                        NamedTextColor.GRAY
+                                ).append(
+                                        Component.text(
+                                                enabled
+                                                        ? "ON"
+                                                        : "OFF",
+                                                enabled
+                                                        ? NamedTextColor.RED
+                                                        : NamedTextColor.GREEN
+                                        )
                                 )
-                        )
-                );
+                        );
 
-                openMain(player);
-            }
+                        openMain(player);
+                    }
 
-            case SLOT_MAIN_EXIT ->
-                    player.closeInventory();
-
-            default -> {
-            }
-        }
-    }
-
-    private void handleItemsClick(
-            Player player,
-            int slot
-    ) {
-        switch (slot) {
-            case SLOT_ITEMS_SHRINE ->
-                    giveItem(
-                            player,
-                            ShrineItems.create(shrineKey)
-                    );
-
-            case SLOT_ITEMS_TOKEN -> {
-                RevivalToken[] values =
-                        RevivalToken.values();
-
-                if (values.length > 0) {
-                    giveItem(
-                            player,
-                            tokens.create(values[0])
-                    );
-                }
-            }
-
-            case SLOT_ITEMS_HORN ->
-                    giveItem(
-                            player,
-                            manager.createRevivalHorn()
-                    );
-
-            case SLOT_ITEMS_BACK ->
-                    openMain(player);
-
-            case SLOT_ITEMS_EXIT ->
-                    player.closeInventory();
-
-            default -> {
-            }
-        }
-    }
-
-    private void handlePlayersClick(
-            InventoryClickEvent event,
-            Player player,
-            int slot
-    ) {
-        if (slot == SLOT_PLAYERS_BACK) {
-            openMain(player);
-            return;
-        }
-
-        if (slot == SLOT_PLAYERS_EXIT) {
-            player.closeInventory();
-            return;
-        }
-
-        ItemStack clicked =
-                event.getCurrentItem();
-
-        if (clicked == null
-                || clicked.getType() != Material.PLAYER_HEAD) {
-            return;
-        }
-
-        if (!(clicked.getItemMeta()
-                instanceof SkullMeta skullMeta)) {
-            return;
-        }
-
-        if (skullMeta.getOwningPlayer() == null) {
-            return;
-        }
-
-        UUID targetId =
-                skullMeta.getOwningPlayer()
-                        .getUniqueId();
-
-        openPlayerControl(
-                player,
-                targetId
-        );
-    }
-
-    private void handlePlayerControlClick(
-            Player player,
-            HollowGuiHolder holder,
-            int slot
-    ) {
-        UUID targetId =
-                holder.getTarget();
-
-        if (targetId == null) {
-            return;
-        }
-
-        switch (slot) {
-            case SLOT_CONTROL_IMMORTALITY -> {
-                boolean enabled =
-                        manager.toggleImmortality(targetId);
-
-                sendToggle(
-                        player,
-                        "Immortality",
-                        enabled,
-                        targetId
-                );
-
-                openPlayerControl(
-                        player,
-                        targetId
-                );
-            }
-
-            case SLOT_CONTROL_SATURATION -> {
-                boolean enabled =
-                        manager.toggleSaturation(targetId);
-
-                sendToggle(
-                        player,
-                        "Saturation",
-                        enabled,
-                        targetId
-                );
-
-                openPlayerControl(
-                        player,
-                        targetId
-                );
-            }
-
-            case SLOT_CONTROL_ARMOR -> {
-                boolean enabled =
-                        manager.toggleInfiniteArmor(targetId);
-
-                sendToggle(
-                        player,
-                        "Infinite Armor",
-                        enabled,
-                        targetId
-                );
-
-                openPlayerControl(
-                        player,
-                        targetId
-                );
-            }
-
-            case SLOT_CONTROL_INVENTORY ->
-                    openPlayerInventory(
-                            player,
-                            targetId
-                    );
-
-            case SLOT_CONTROL_ENDER ->
-                    openPlayerEnderChest(
-                            player,
-                            targetId
-                    );
-
-            case SLOT_CONTROL_BACK ->
-                    openPlayers(player);
-
-            case SLOT_CONTROL_EXIT ->
-                    player.closeInventory();
-
-            default -> {
-            }
-        }
-    }
-
-    private void handleEditorClick(
-            InventoryClickEvent event,
-            Player admin,
-            HollowGuiHolder holder
-    ) {
-        int rawSlot = event.getRawSlot();
-        Inventory top = event.getView().getTopInventory();
-
-        if (rawSlot < 0 || rawSlot >= top.getSize()) {
-            /*
-             * Prevent shift-clicking items from the player's
-             * own inventory into the admin editor.
-             */
-            if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
-                event.setCancelled(true);
-            }
-
-            return;
-        }
-
-        if (holder.getType()
-                == HollowGuiHolder.Type.PLAYER_INVENTORY) {
-
-            if (rawSlot == SLOT_INV_BACK) {
-                event.setCancelled(true);
-
-                if (holder.getTarget() != null) {
-                    openPlayerControl(
-                            admin,
-                            holder.getTarget()
-                    );
+                    default -> {
+                    }
                 }
 
                 return;
             }
 
-            if (rawSlot == SLOT_INV_EXIT) {
-                event.setCancelled(true);
-                admin.closeInventory();
+            if (type == HollowGuiHolder.Type.ITEMS) {
                 return;
             }
 
-            if (rawSlot >= SLOT_INV_HELMET
-                    && rawSlot <= SLOT_INV_OFFHAND) {
+            if (type == HollowGuiHolder.Type.PLAYERS) {
 
-                ItemStack current =
+                ItemStack clicked =
                         event.getCurrentItem();
 
-                if (isPlaceholder(current)) {
-                    event.setCancelled(true);
+                if (clicked == null
+                        || clicked.getType()
+                        != Material.PLAYER_HEAD) {
                     return;
                 }
 
+                if (!(clicked.getItemMeta()
+                        instanceof SkullMeta skullMeta)) {
+                    return;
+                }
+
+                if (skullMeta.getOwningPlayer() == null) {
+                    return;
+                }
+
+                UUID targetId =
+                        skullMeta.getOwningPlayer()
+                                .getUniqueId();
+
+                openPlayerControl(
+                        player,
+                        targetId
+                );
+
                 return;
+            }
+
+            if (type == HollowGuiHolder.Type.PLAYER_CONTROL) {
+
+                UUID targetId =
+                        holder.getTarget();
+
+                if (targetId == null) {
+                    return;
+                }
+
+                switch (event.getRawSlot()) {
+
+                    case 0 -> {
+                        boolean enabled =
+                                manager.toggleImmortality(
+                                        targetId
+                                );
+
+                        sendToggle(
+                                player,
+                                "Immortality",
+                                enabled,
+                                targetId
+                        );
+
+                        openPlayerControl(
+                                player,
+                                targetId
+                        );
+                    }
+
+                    case 1 -> {
+                        boolean enabled =
+                                manager.toggleSaturation(
+                                        targetId
+                                );
+
+                        sendToggle(
+                                player,
+                                "Saturation",
+                                enabled,
+                                targetId
+                        );
+
+                        openPlayerControl(
+                                player,
+                                targetId
+                        );
+                    }
+
+                    case 2 -> {
+                        boolean enabled =
+                                manager.toggleInfiniteArmor(
+                                        targetId
+                                );
+
+                        sendToggle(
+                                player,
+                                "Infinite Armor",
+                                enabled,
+                                targetId
+                        );
+
+                        openPlayerControl(
+                                player,
+                                targetId
+                        );
+                    }
+
+                    case 18 ->
+                            openPlayerInventory(
+                                    player,
+                                    targetId
+                            );
+
+                    case 19 ->
+                            openPlayerEnderChest(
+                                    player,
+                                    targetId
+                            );
+
+                    default -> {
+                    }
+                }
             }
 
             return;
         }
 
-        if (holder.getType()
-                == HollowGuiHolder.Type.PLAYER_ENDER_CHEST) {
+        /*
+         * PLAYER_INVENTORY is editable.
+         *
+         * Slots 0-35 = normal inventory
+         * Slots 36-39 = armor
+         * Slot 40 = offhand
+         * Slots 41-53 = locked filler
+         */
+        if (type == HollowGuiHolder.Type.PLAYER_INVENTORY) {
 
-            if (rawSlot == 25) {
+            int rawSlot =
+                    event.getRawSlot();
+
+            int topSize =
+                    event.getView()
+                            .getTopInventory()
+                            .getSize();
+
+            /*
+             * Only cancel clicks inside the filler area.
+             */
+            if (rawSlot >= 41
+                    && rawSlot < topSize) {
+
                 event.setCancelled(true);
-
-                if (holder.getTarget() != null) {
-                    openPlayerControl(
-                            admin,
-                            holder.getTarget()
-                    );
-                }
-
-                return;
             }
 
-            if (rawSlot == 26) {
-                event.setCancelled(true);
-                admin.closeInventory();
-            }
+            return;
+        }
+
+        /*
+         * Ender chest remains fully editable.
+         */
+        if (type == HollowGuiHolder.Type.PLAYER_ENDER_CHEST) {
+            return;
         }
     }
 
@@ -999,45 +769,38 @@ public final class HollowAdminListener implements Listener {
             return;
         }
 
-        if (holder.getType()
-                == HollowGuiHolder.Type.PLAYER_INVENTORY
-                || holder.getType()
-                == HollowGuiHolder.Type.PLAYER_ENDER_CHEST) {
+        HollowGuiHolder.Type type =
+                holder.getType();
 
-            int topSize =
-                    event.getView()
-                            .getTopInventory()
-                            .getSize();
+        if (type == HollowGuiHolder.Type.MAIN
+                || type == HollowGuiHolder.Type.ITEMS
+                || type == HollowGuiHolder.Type.PLAYERS
+                || type == HollowGuiHolder.Type.PLAYER_CONTROL) {
 
-            for (int rawSlot :
-                    event.getRawSlots()) {
-
-                if (rawSlot < topSize) {
-                    if (holder.getType()
-                            == HollowGuiHolder.Type.PLAYER_INVENTORY
-                            && (rawSlot == SLOT_INV_BACK
-                            || rawSlot == SLOT_INV_EXIT
-                            || isArmorSlot(rawSlot))) {
-
-                        event.setCancelled(true);
-                        return;
-                    }
-
-                    if (holder.getType()
-                            == HollowGuiHolder.Type.PLAYER_ENDER_CHEST
-                            && (rawSlot == 25
-                            || rawSlot == 26)) {
-
-                        event.setCancelled(true);
-                        return;
-                    }
-                }
-            }
-
+            event.setCancelled(true);
             return;
         }
 
-        event.setCancelled(true);
+        if (type == HollowGuiHolder.Type.PLAYER_INVENTORY) {
+
+            /*
+             * Armor and offhand are intentionally allowed.
+             *
+             * Only slots 41-53 are blocked because
+             * they contain the GUI filler.
+             */
+            for (int rawSlot : event.getRawSlots()) {
+
+                if (rawSlot >= 41
+                        && rawSlot < event.getView()
+                        .getTopInventory()
+                        .getSize()) {
+
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+        }
     }
 
     @EventHandler
@@ -1079,12 +842,23 @@ public final class HollowAdminListener implements Listener {
             Inventory viewer =
                     event.getInventory();
 
-            for (int i = 0; i < target.getEnderChest().getSize(); i++) {
-                target.getEnderChest().setItem(
-                        i,
-                        cloneItem(viewer.getItem(i))
-                );
+            ItemStack[] contents =
+                    new ItemStack[
+                            target.getEnderChest().getSize()
+                    ];
+
+            for (int i = 0;
+                 i < contents.length;
+                 i++) {
+
+                contents[i] =
+                        cloneItem(
+                                viewer.getItem(i)
+                        );
             }
+
+            target.getEnderChest()
+                    .setContents(contents);
 
             return;
         }
@@ -1103,49 +877,61 @@ public final class HollowAdminListener implements Listener {
                     event.getInventory();
 
             /*
-             * Only copy the 36 normal inventory slots.
-             *
-             * Armor and offhand are handled separately below.
-             * This prevents Bukkit's setContents() from replacing
-             * or wiping armor unexpectedly.
+             * Normal inventory.
              */
+            ItemStack[] main =
+                    new ItemStack[36];
+
             for (int i = 0; i < 36; i++) {
-                target.getInventory().setItem(
-                        i,
-                        cloneItem(viewer.getItem(i))
-                );
+                main[i] =
+                        cloneItem(
+                                viewer.getItem(i)
+                        );
             }
 
-            ItemStack helmet =
-                    getEditableArmorItem(
-                            viewer.getItem(SLOT_INV_HELMET)
+            target.getInventory()
+                    .setContents(main);
+
+            /*
+             * Armor.
+             */
+            target.getInventory()
+                    .setHelmet(
+                            cloneItem(
+                                    viewer.getItem(36)
+                            )
                     );
 
-            ItemStack chestplate =
-                    getEditableArmorItem(
-                            viewer.getItem(SLOT_INV_CHESTPLATE)
+            target.getInventory()
+                    .setChestplate(
+                            cloneItem(
+                                    viewer.getItem(37)
+                            )
                     );
 
-            ItemStack leggings =
-                    getEditableArmorItem(
-                            viewer.getItem(SLOT_INV_LEGGINGS)
+            target.getInventory()
+                    .setLeggings(
+                            cloneItem(
+                                    viewer.getItem(38)
+                            )
                     );
 
-            ItemStack boots =
-                    getEditableArmorItem(
-                            viewer.getItem(SLOT_INV_BOOTS)
+            target.getInventory()
+                    .setBoots(
+                            cloneItem(
+                                    viewer.getItem(39)
+                            )
                     );
 
-            ItemStack offhand =
-                    getEditableArmorItem(
-                            viewer.getItem(SLOT_INV_OFFHAND)
+            /*
+             * Offhand.
+             */
+            target.getInventory()
+                    .setItemInOffHand(
+                            cloneItem(
+                                    viewer.getItem(40)
+                            )
                     );
-
-            target.getInventory().setHelmet(helmet);
-            target.getInventory().setChestplate(chestplate);
-            target.getInventory().setLeggings(leggings);
-            target.getInventory().setBoots(boots);
-            target.getInventory().setItemInOffHand(offhand);
         }
     }
 
@@ -1222,8 +1008,8 @@ public final class HollowAdminListener implements Listener {
                     () -> {
                         if (player.isOnline()
                                 && manager.isImmortality(
-                                player.getUniqueId()
-                        )) {
+                                        player.getUniqueId()
+                                )) {
                             player.setHealth(0.5);
                         }
                     }
@@ -1300,12 +1086,14 @@ public final class HollowAdminListener implements Listener {
         }
 
         Player target =
-                Bukkit.getPlayerExact(split[1]);
+                Bukkit.getPlayerExact(
+                        split[1]
+                );
 
         if (target == null
                 || !manager.isImmortality(
-                target.getUniqueId()
-        )) {
+                        target.getUniqueId()
+                )) {
             return;
         }
 
@@ -1354,6 +1142,7 @@ public final class HollowAdminListener implements Listener {
 
         event.viewers().removeIf(
                 viewer -> {
+
                     if (!(viewer instanceof Player receiver)) {
                         return false;
                     }
@@ -1379,7 +1168,8 @@ public final class HollowAdminListener implements Listener {
     public void onRevivalHorn(
             PlayerInteractEvent event
     ) {
-        if (!event.getAction().isRightClick()) {
+        if (!event.getAction()
+                .isRightClick()) {
             return;
         }
 
@@ -1401,98 +1191,9 @@ public final class HollowAdminListener implements Listener {
     public void onShrineBreak(
             BlockBreakEvent event
     ) {
-        // Shrine breaking is handled by ShrineListener.
-    }
-
-    private void giveItem(
-            Player player,
-            ItemStack item
-    ) {
-        if (item == null) {
-            return;
-        }
-
-        MapAddItemResult result =
-                giveItemSafely(player, item);
-
-        if (!result.added) {
-            player.getWorld().dropItemNaturally(
-                    player.getLocation(),
-                    result.item
-            );
-        }
-    }
-
-    private MapAddItemResult giveItemSafely(
-            Player player,
-            ItemStack item
-    ) {
-        java.util.HashMap<Integer, ItemStack> leftovers =
-                player.getInventory().addItem(item);
-
-        if (leftovers.isEmpty()) {
-            return new MapAddItemResult(
-                    true,
-                    null
-            );
-        }
-
-        ItemStack leftover =
-                leftovers.values()
-                        .iterator()
-                        .next();
-
-        return new MapAddItemResult(
-                false,
-                leftover
-        );
-    }
-
-    private ItemStack armorOrPane(
-            ItemStack item,
-            Material pane,
-            String name
-    ) {
-        if (item != null && !item.getType().isAir()) {
-            return item.clone();
-        }
-
-        return manager.createGuiItem(
-                pane,
-                name,
-                NamedTextColor.LIGHT_PURPLE
-        );
-    }
-
-    private boolean isPlaceholder(ItemStack item) {
-        if (item == null
-                || !item.hasItemMeta()) {
-            return false;
-        }
-
-        Material type =
-                item.getType();
-
-        return type == Material.PURPLE_STAINED_GLASS_PANE
-                || type == Material.ORANGE_STAINED_GLASS_PANE;
-    }
-
-    private boolean isArmorSlot(int slot) {
-        return slot == SLOT_INV_HELMET
-                || slot == SLOT_INV_CHESTPLATE
-                || slot == SLOT_INV_LEGGINGS
-                || slot == SLOT_INV_BOOTS
-                || slot == SLOT_INV_OFFHAND;
-    }
-
-    private ItemStack getEditableArmorItem(
-            ItemStack item
-    ) {
-        if (isPlaceholder(item)) {
-            return null;
-        }
-
-        return cloneItem(item);
+        /*
+         * Shrine breaking is handled by ShrineListener.
+         */
     }
 
     private void sendToggle(
@@ -1545,19 +1246,5 @@ public final class HollowAdminListener implements Listener {
         return item == null
                 ? null
                 : item.clone();
-    }
-
-    private static final class MapAddItemResult {
-
-        private final boolean added;
-        private final ItemStack item;
-
-        private MapAddItemResult(
-                boolean added,
-                ItemStack item
-        ) {
-            this.added = added;
-            this.item = item;
-        }
     }
 }
