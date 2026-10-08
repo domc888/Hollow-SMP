@@ -2,3 +2,13 @@ max-lives: 3
 starting-lives: 3
 revive-lives: 1
 revive-message: "{player} has been revived!"
+
+proximity-chat:
+  enabled: false
+  distance: 500
+
+revival-horn:
+  sound-radius: 96
+
+voice-chat:
+  global-mute: false
